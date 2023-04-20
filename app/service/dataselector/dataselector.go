@@ -4,14 +4,15 @@ import (
 	"sort"
 	"strings"
 
-	"ginskeleton/app/service/interf"
 	"ginskeleton/app/service/kube"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	corev1 "k8s.io/api/core/v1"
 )
 
 // 实例化dataselector结构体,组装数据
-func CreateDataSelectorFactory(dataCell []interf.DataCell, filterName string, limit, page int) *dataSelector {
+func CreateDataSelectorFactory(dataCell []*corev1.Pod, filterName string, limit, page int) *dataSelector {
 	return &dataSelector{
 		genericDataList: dataCell,
 		dataSelect: &dataSelectQuery{
@@ -25,7 +26,7 @@ func CreateDataSelectorFactory(dataCell []interf.DataCell, filterName string, li
 }
 
 type dataSelector struct {
-	genericDataList []interf.DataCell
+	genericDataList []*corev1.Pod
 	dataSelect      *dataSelectQuery
 }
 
@@ -52,7 +53,7 @@ func (d *dataSelector) filter() *dataSelector {
 		return d
 	}
 	// 匹配 pod 名称，将符合名称的进行返回
-	var filtered []interf.DataCell
+	var filtered []*corev1.Pod
 	for _, value := range d.genericDataList {
 		// 定义是否匹配标签变量,默认是匹配的
 		// matches := true
@@ -103,13 +104,13 @@ func (d *dataSelector) paginate() *dataSelector {
 // 	return pods
 // }
 
-func (d *dataSelector) fromCells() []corev1.Pod {
-	pods := make([]corev1.Pod, len(d.genericDataList))
-	for i := range d.genericDataList {
-		pods[i] = corev1.Pod(d.genericDataList[i].(kube.PodCell))
-	}
-	return pods
-}
+//func (d *dataSelector) fromCells() []corev1.Pod {
+//	pods := make([]corev1.Pod, len(d.genericDataList))
+//	for i := range d.genericDataList {
+//		pods[i] = corev1.Pod(d.genericDataList[i].(kube.PodCell))
+//	}
+//	return pods
+//}
 
 /*实现自定义的排序方法,需要重写Len,Swap,Less方法
 这个排序没有什么具体意义，因为申请时间排序才有一点参考价值，应该在第一次创建的时候写入时间*/
@@ -126,18 +127,23 @@ func (d *dataSelector) Swap(i, j int) {
 
 // Less用于比较大小,根据创建时间
 func (d *dataSelector) Less(i, j int) bool {
-	return d.genericDataList[i].GetCreation().Before(d.genericDataList[j].GetCreation())
+	timestampI := d.genericDataList[i].GetCreationTimestamp()
+	//转化为指针类型
+	x := new(metav1.Time)
+	*x = d.genericDataList[j].GetCreationTimestamp()
+	return timestampI.Before(x)
 }
 
 // 重写以上三个方法,用sort.Sort 方法触发排序
 func (d *dataSelector) Sort() *dataSelector {
-	sort.Sort(sort.Reverse(d)) // 返序排列
+	sort.Sort(sort.Reverse(d)) // 反序排列
 	return d
 }
 
+// 返回信息的列表
 func (d *dataSelector) PodList() []kube.PodList {
 	data := make([]kube.PodList, d.Len())
-	for k, pod := range d.filter().Sort().paginate().fromCells() { // 过滤对应的 pod名称 排序、分页、类型转化
+	for k, pod := range d.filter().Sort().paginate().genericDataList { // 过滤对应的 pod名称 排序、分页、类型转化
 		data[k].Name = pod.Name
 		data[k].Namespace = pod.Namespace
 		data[k].Status = string(pod.Status.Phase)

@@ -1,11 +1,8 @@
 package kube
 
 import (
-	"time"
-
 	"ginskeleton/app/global/variable"
 	"ginskeleton/app/model/api_model"
-	"ginskeleton/app/service/interf"
 
 	corev1 "k8s.io/api/core/v1"
 )
@@ -18,19 +15,19 @@ func CreatePodFactory() *pod {
 // 定义一个空结构体，主要是为了实现一些方法
 type pod struct{}
 
-// 定义一个新的类型，基于corev1.pod类型
-type PodCell corev1.Pod
-
-// 针对自定义类型实现方法，实现DataCell接口  排序的时候需要用到
-
-// 重写DataCell接口的两个方法
-func (p PodCell) GetCreation() time.Time {
-	return p.CreationTimestamp.Time
-}
-
-func (p PodCell) GetName() string {
-	return p.Name
-}
+//// 定义一个新的类型，基于corev1.pod类型
+//type PodCell corev1.Pod
+//
+//// 针对自定义类型实现方法，实现DataCell接口  排序的时候需要用到
+//
+//// 重写DataCell接口的两个方法
+//func (p PodCell) GetCreation() time.Time {
+//	return p.CreationTimestamp.Time
+//}
+//
+//func (p PodCell) GetName() string {
+//	return p.Name
+//}
 
 // 定义列表的返回内容,Items是pod元素列表,Total是元素数量，返回前端的结构体，根据前端需求返回（这里是直接全部返回 pod 字段）
 //
@@ -43,7 +40,7 @@ type PodResp struct {
 	Items []PodList `json:"items"`
 }
 
-// 封装一个二级目录列表
+// 封装一个二级目录列表,返回信息
 type PodList struct {
 	Name       string              `json:"name"`
 	Namespace  string              `json:"namespace"`
@@ -52,16 +49,16 @@ type PodList struct {
 }
 
 // 类型转换方法corev1.Pod --> DataCell,DataCell-->corev1.Pod
-func (p *pod) toCells(pods []*corev1.Pod) []interf.DataCell {
-	cells := make([]interf.DataCell, len(pods))
-	for i := range pods {
-		cells[i] = PodCell(*pods[i])
-	}
-	return cells
-}
+//func (p *pod) toCells(pods []*corev1.Pod) []*interf.DataCell {
+//	cells := make([]*interf.DataCell, len(pods))
+//	for i := range pods {
+//		*cells[i] = PodCell(*pods[i])
+//	}
+//	return cells
+//}
 
 // 获取pod列表,支持过滤,排序,分页,模糊查找
-func (p *pod) List(namespace string) ([]interf.DataCell, error) {
+func (p *pod) List(namespace string) ([]*corev1.Pod, error) {
 	// context.TODO()  用于声明一个空的context上下文,用于List方法内设置这个请求超时
 	//调用 model 层查询 pod
 	podList, err := api_model.CreateClientsetFactory().List(namespace)
@@ -75,7 +72,8 @@ func (p *pod) List(namespace string) ([]interf.DataCell, error) {
 			// 返回给上一层,最终返回给前端,前端捕获到后打印出来
 			return nil, errors.New(fmt.Sprintf("获取 pod 列表失败, namespace: %s ,pod: %s", namespace, err))
 		}*/
-	return p.toCells(podList), nil
+	//return p.toCells(podList), nil
+	return podList, nil
 }
 
 /*// 获取单个pod
