@@ -1,0 +1,24 @@
+version: "3.8"
+services:
+  nginxApi:
+    image: nginx:${NGINX_VERSION}
+    container_name: nginxApi-${NGINX_VERSION}
+    environment:
+      - TZ=Asia/Shanghai
+    ports:
+      - "80:80"
+    volumes:
+      - ../../storage/app:/public
+      - ./conf/nginx.conf:/etc/nginxWeb/nginx.conf
+      - ./logs:/home/wwwlogs
+    restart: "always"
+    networks:
+      - nginx-net
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+#    network_mode:  host #mac使用 host 无效，根 mac 的 docker 有关
+networks:
+  nginx-net:
+    driver: bridge

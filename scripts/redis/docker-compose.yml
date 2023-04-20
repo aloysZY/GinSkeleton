@@ -1,0 +1,23 @@
+version: "3.8"
+services:
+  redis:
+    image: redis:${NGINX_VERSION}
+    container_name: redis-${NGINX_VERSION}
+    environment:
+      - TZ=Asia/Shanghai
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./conf:/etc/redis
+      - ./data:/data
+    restart: "always"
+    networks:
+      - nginx-net
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+#    network_mode:  host
+networks:
+  nginx-net:
+    driver: bridge
