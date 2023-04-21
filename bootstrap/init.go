@@ -1,12 +1,13 @@
 package bootstrap
 
 import (
-	"fmt"
 	"ginskeleton/app/utils/kube_client"
 	"log"
 	"os"
 	"path/filepath"
 	"time"
+
+	"go.uber.org/zap"
 
 	_ "ginskeleton/app/core/destroy" // 监听程序退出信号，用于资源的释放
 	"ginskeleton/app/global/my_errors"
@@ -80,32 +81,26 @@ func init() {
 
 	// 2.检查配置文件以及日志目录等非编译性的必要条件
 	checkRequiredFolders()
-	log.Println("Check required succeeded!")
 
 	// 3.初始化表单参数验证器，注册在容器（Web、Api共用容器）
 	// register_validator.WebRegisterValidator()
 	register_validator.ApiRegisterValidator()
-	log.Println("表单参数验证器 succeeded!")
 
 	// 4.启动针对配置文件(confgi.yml、gorm_v2.yml)变化的监听， 配置文件操作指针，初始化为全局变量
 	variable.ConfigYml = yml_config.CreateYamlFactory()
 	variable.ConfigYml.ConfigFileChangeListen()
-	log.Println("应用配置文件加载成功!")
 	// config>gorm_v2.yml 启动文件变化监听事件
 	variable.ConfigGormv2Yml = variable.ConfigYml.Clone("gorm_v2")
 	variable.ConfigGormv2Yml.ConfigFileChangeListen()
-	log.Println("数据库配置文件加载成功!")
 
 	// 5.初始化全局日志句柄，并载入日志钩子处理函数
 	variable.ZapLog = zap_factory.CreateZapFactory(sys_log_hook.ZapLogHandler)
-	variable.ZapLog.Info("日志初始化完成！")
 
 	// 6.根据配置初始化 gorm mysql 全局 *gorm.Db
 	if variable.ConfigGormv2Yml.GetInt("Gormv2.Mysql.IsInitGlobalGormMysql") == 1 {
 		if dbMysql, err := gorm_v2.GetOneMysqlClient(); err != nil {
 			log.Fatal(my_errors.ErrorsGormInitFail + err.Error())
 		} else {
-			variable.ZapLog.Info("mysql数据库初始化完成！")
 			variable.GormDbMysql = dbMysql
 		}
 	}
@@ -114,7 +109,6 @@ func init() {
 		if dbSqlserver, err := gorm_v2.GetOneSqlserverClient(); err != nil {
 			log.Fatal(my_errors.ErrorsGormInitFail + err.Error())
 		} else {
-			variable.ZapLog.Info("sqlserver数据库初始化完成！")
 			variable.GormDbSqlserver = dbSqlserver
 		}
 	}
@@ -123,14 +117,12 @@ func init() {
 		if dbPostgre, err := gorm_v2.GetOnePostgreSqlClient(); err != nil {
 			log.Fatal(my_errors.ErrorsGormInitFail + err.Error())
 		} else {
-			variable.ZapLog.Info("postgresql数据库初始化完成！")
 			variable.GormDbPostgreSql = dbPostgre
 		}
 	}
 
 	// 7.雪花算法全局变量
 	variable.SnowFlake = snow_flake.CreateSnowflakeFactory()
-	variable.ZapLog.Info("雪花算法初始化完成！")
 
 	// 8.websocket Hub中心启动
 	if variable.ConfigYml.GetInt("Websocket.Start") == 1 {
@@ -155,36 +147,24 @@ func init() {
 	}
 
 	// 11.初始化clientset
-	/*	if variable.ConfigYml.GetInt("Kubernetes.Clientset.IsInitGlobalClientset") == 1 {
-		if client, err := kube_client.GetClientset(variable.ConfigYml.GetString("Kubernetes.Clientset.ConfigPath")); err != nil {
-			variable.ZapLog.Fatal("Kubernetes.Clientset error: ", zap.Error(err))
-		} else {
-			variable.ZapLog.Info("kubernetes client success!")
-			variable.Clientset = client.Clientset
-		}
-	}*/
-	//if variable.ConfigYml.GetInt("Kubernetes.Clientset.IsInitGlobalClientset") == 1 {
-	//	if client, err := kube_client.GetOneClientset(variable.ConfigYml.GetString("Kubernetes.Clientset.ConfigPath")); err != nil {
-	//		variable.ZapLog.Fatal("Kubernetes.Clientset error: ", zap.Error(err))
-	//	} else {
-	//		variable.ZapLog.Info("kubernetes client success!")
-	//		variable.Clientset = client
-	//	}
-	//}
 	if variable.ConfigYml.GetInt("Kubernetes.Clientset.IsInitGlobalClientset") == 1 {
-		variable.KubeControllerClientset = kube_client.NewKubeControllerclientset(variable.ConfigYml.GetString("Kubernetes.Clientset.ConfigPath"), 0)
+		controllerclientset, err := kube_client.NewKubeControllerclientset(variable.ConfigYml.GetString("Kubernetes.Clientset.ConfigPath"), 30)
+		if err != nil {
+			variable.ZapLog.Error("Error creating Kubernetes controllerclientset: ", zap.Error(err))
+			return
+		}
 		stopPodch := make(chan struct{})
 		go func() {
-			variable.KubeControllerClientset.Run(stopPodch)
+			controllerclientset.Run(stopPodch)
 			<-stopPodch
 		}()
 		for {
-			if variable.KubeControllerClientset.Status == 1 {
+			if controllerclientset.Status == 1 {
 				break
 			}
 			time.Sleep(time.Second * 1)
-			fmt.Println("sleep 1S")
 		}
+		variable.KubeControllerClientset = controllerclientset
 	}
 
 	// 12.如果设置发送邮件，就初始化邮件

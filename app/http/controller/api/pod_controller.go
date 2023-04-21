@@ -65,7 +65,7 @@ func (p *Pod) List(context *gin.Context) {
 	// }
 
 	response.Success(context, "podList", &kube.PodResp{
-		Total: len(data), // 返回的 pod 总数量
+		Total: len(dataCell), // 返回的 pod 总数量，data 数据的长度不准了，应为处理了数据
 		Items: data,
 	})
 }

@@ -142,8 +142,10 @@ func (d *dataSelector) Sort() *dataSelector {
 
 // 返回信息的列表
 func (d *dataSelector) PodList() []kube.PodList {
-	data := make([]kube.PodList, d.Len())
-	for k, pod := range d.filter().Sort().paginate().genericDataList { // 过滤对应的 pod名称 排序、分页、类型转化
+	//这里初始化的容量，应该是要返回到前端，已经处理过的数据的长度
+	datalist := d.filter().Sort().paginate().genericDataList
+	data := make([]kube.PodList, len(datalist))
+	for k, pod := range datalist { // 过滤对应的 pod名称 排序、分页、类型转化
 		data[k].Name = pod.Name
 		data[k].Namespace = pod.Namespace
 		data[k].Status = string(pod.Status.Phase)
