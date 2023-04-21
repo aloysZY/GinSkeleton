@@ -5,6 +5,7 @@ HttpServer:
     Port: ":20191"                 #门户网站类端口,注意前面有冒号
   Web:
     Port: ":20201"                 #后端应用类端口,注意前面有冒号
+  ContextTimeout:  60  #单位是秒
   AllowCrossDomain: true  #是否允许跨域，默认 允许，更多关于跨域的介绍从参考：https://www.yuque.com/xiaofensinixidaouxiang/bkfhct/kxddzd
   DefaultPageSize: 20
   MaxPageSize: 100

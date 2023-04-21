@@ -1,4 +1,4 @@
-package api_model
+package api
 
 import (
 	"ginskeleton/app/global/variable"

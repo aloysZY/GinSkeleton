@@ -21,7 +21,7 @@ func (p *Pod) List(context *gin.Context) {
 	page := context.GetFloat64(consts.ValidatorPrefix + "page")
 
 	// 根据命名空间查询 pod
-	dataCell, err := kube.CreatePodFactory().List(namespace)
+	dataCell, err := kube.CreatePodFactory(context).List(namespace)
 	if err != nil {
 		response.ErrorSystem(context, "获取 pod 列表失败", nil) // 返回前端，还是错误封装一下
 		return

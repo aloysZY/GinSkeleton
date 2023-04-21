@@ -1,19 +1,26 @@
 package kube
 
 import (
+	"context"
 	"ginskeleton/app/global/variable"
-	"ginskeleton/app/model/api_model"
+	"ginskeleton/app/model/api"
 
 	corev1 "k8s.io/api/core/v1"
 )
 
 // 构造函数
-func CreatePodFactory() *pod {
-	return &pod{}
+func CreatePodFactory(ctx context.Context) *pod {
+	p := &pod{ctx: ctx}
+	p.clientset = api.CreateClientsetFactory()
+	return p
+
 }
 
 // 定义一个空结构体，主要是为了实现一些方法
-type pod struct{}
+type pod struct {
+	ctx       context.Context
+	clientset *api.Clientset
+}
 
 type PodResp struct {
 	Total int       `json:"total"`
@@ -31,7 +38,8 @@ type PodList struct {
 // 获取pod列表,支持过滤,排序,分页,模糊查找
 func (p *pod) List(namespace string) ([]*corev1.Pod, error) {
 	// 调用 model 层查询 pod
-	podList, err := api_model.CreateClientsetFactory().List(namespace)
+	podList, err := p.clientset.List(namespace)
+	//podList, err := api_model.CreateClientsetFactory().List(namespace)
 	if err != nil {
 		variable.ZapLog.Sugar().Info("List pod failed error: %v\n", err)
 		return nil, err
