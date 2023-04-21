@@ -59,14 +59,6 @@ func (d *dataSelector) filter() *dataSelector {
 		// matches := true
 		objName := value.GetName()
 		// 如果 pod 名称中包含了要查找的名字，就添加到列表
-		// if !strings.Contains(objName, d.dataSelect.filter.name) {
-		// 	matches = false
-		// 	continue // 跳出这个 if 判断，继续执行代码
-		// }
-		// if matches {
-		// 	filtered = append(filtered, value)
-		// }
-		// 如果 pod 名称中包含了要查找的名字，就添加到列表
 		if strings.Contains(objName, d.dataSelect.filter.name) {
 			filtered = append(filtered, value)
 		}
@@ -95,23 +87,6 @@ func (d *dataSelector) paginate() *dataSelector {
 	return d
 }
 
-// func (d *dataSelector) FromCells(cells []interf.DataCell) []corev1.Pod {
-// 	pods := make([]corev1.Pod, len(cells))
-// 	for i := range cells {
-// 		// cells[i].(podCell)是将DataCell类型转换成podCell
-// 		pods[i] = corev1.Pod(cells[i].(kube.PodCell))
-// 	}
-// 	return pods
-// }
-
-//func (d *dataSelector) fromCells() []corev1.Pod {
-//	pods := make([]corev1.Pod, len(d.genericDataList))
-//	for i := range d.genericDataList {
-//		pods[i] = corev1.Pod(d.genericDataList[i].(kube.PodCell))
-//	}
-//	return pods
-//}
-
 /*实现自定义的排序方法,需要重写Len,Swap,Less方法
 这个排序没有什么具体意义，因为申请时间排序才有一点参考价值，应该在第一次创建的时候写入时间*/
 
@@ -128,7 +103,7 @@ func (d *dataSelector) Swap(i, j int) {
 // Less用于比较大小,根据创建时间
 func (d *dataSelector) Less(i, j int) bool {
 	timestampI := d.genericDataList[i].GetCreationTimestamp()
-	//转化为指针类型
+	// 转化为指针类型
 	x := new(metav1.Time)
 	*x = d.genericDataList[j].GetCreationTimestamp()
 	return timestampI.Before(x)
@@ -142,7 +117,7 @@ func (d *dataSelector) Sort() *dataSelector {
 
 // 返回信息的列表
 func (d *dataSelector) PodList() []kube.PodList {
-	//这里初始化的容量，应该是要返回到前端，已经处理过的数据的长度
+	// 这里初始化的容量，应该是要返回到前端，已经处理过的数据的长度
 	datalist := d.filter().Sort().paginate().genericDataList
 	data := make([]kube.PodList, len(datalist))
 	for k, pod := range datalist { // 过滤对应的 pod名称 排序、分页、类型转化

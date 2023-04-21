@@ -20,49 +20,15 @@ func (p *Pod) List(context *gin.Context) {
 	limit := context.GetFloat64(consts.ValidatorPrefix + "limit")
 	page := context.GetFloat64(consts.ValidatorPrefix + "page")
 
-	//根据命名空间查询 pod
+	// 根据命名空间查询 pod
 	dataCell, err := kube.CreatePodFactory().List(namespace)
 	if err != nil {
 		response.ErrorSystem(context, "获取 pod 列表失败", nil) // 返回前端，还是错误封装一下
 		return
 	}
 
-	//PodList 进行类型转换，排序和根据 pood 名称过滤
+	// PodList 进行类型转换，排序和根据 pood 名称过滤
 	data := dataselector.CreateDataSelectorFactory(dataCell, filterName, int(limit), int(page)).PodList()
-
-	// // 排序和分页,转化为 pod 类型
-	// data := dataSelector.Sort().paginate().FromCells()
-	//
-	// // 修改为返回特定字段
-	// /*	datalen := len(data)
-	// 	dataMapList := make([]map[string]string, datalen)
-	// 	// 添加特定字段
-	// 	// 这个地方统筹规划一下吧，全都是切片了，太乱了,直接使用一个结构体处理吧
-	// 	for k, v := range data {
-	// 		dataMap := make([]map[string]string, datalen)
-	// 		dataMap[k]["pod_name"] = v.Name
-	// 		for x, y := range v.Spec.Containers {
-	// 			dataC := make([]map[string]string, len(v.Spec.Containers))
-	// 			dataC[x]["containers_name"] = y.Name
-	// 			dataC[x]["containers_image"] = y.Image
-	//
-	// 		}
-	// 		dataMap["status"] = string(v.Status.Phase)
-	// 		dataMapList[k] = dataMap
-	// 	}*/
-	// data1 := make([]kube.PodList, len(data))
-	// for k, pod := range data {
-	// 	data1[k].Name = pod.Name
-	// 	data1[k].Status = string(pod.Status.Phase)
-	// 	for _, container := range pod.Spec.Containers {
-	// 		// yyyMap :=new()
-	// 		// yyy := make([]map[string]string, len(pod.Spec.Containers)) //这样写就多了一层列表，所以不需要了
-	// 		containerMsg := make(map[string]string) // 对 []map[string]string 中的 map 进行初始化
-	// 		containerMsg["name"] = container.Name
-	// 		containerMsg["Image"] = container.Image
-	// 		data1[k].Containers = append(data1[k].Containers, containerMsg)
-	// 	}
-	// }
 
 	response.Success(context, "podList", &kube.PodResp{
 		Total: len(dataCell), // 返回的 pod 总数量，data 数据的长度不准了，应为处理了数据
@@ -70,7 +36,7 @@ func (p *Pod) List(context *gin.Context) {
 	})
 }
 
-//func (p *Pod) Detail(context *gin.Context) {
+// func (p *Pod) Detail(context *gin.Context) {
 //	podName := context.GetString(consts.ValidatorPrefix + "pod_name")
 //	namespace := context.GetString(consts.ValidatorPrefix + "namespace")
 //
@@ -85,9 +51,9 @@ func (p *Pod) List(context *gin.Context) {
 //		return
 //	}
 //	response.Success(context, "Detail", pod)
-//}
+// }
 //
-//func (p *Pod) Delete(context *gin.Context) {
+// func (p *Pod) Delete(context *gin.Context) {
 //	podName := context.GetString(consts.ValidatorPrefix + "pod_name")
 //	namespace := context.GetString(consts.ValidatorPrefix + "namespace")
 //
@@ -102,9 +68,9 @@ func (p *Pod) List(context *gin.Context) {
 //		return
 //	}
 //	response.Success(context, "Delete", "删除成功")
-//}
+// }
 //
-//func (p *Pod) Update(context *gin.Context) {
+// func (p *Pod) Update(context *gin.Context) {
 //	namespace := context.GetString(consts.ValidatorPrefix + "namespace")
 //	podName := context.GetString(consts.ValidatorPrefix + "pod_name")
 //	content := context.GetString(consts.ValidatorPrefix + "content")
@@ -118,9 +84,9 @@ func (p *Pod) List(context *gin.Context) {
 //		return
 //	}
 //	response.ErrorSystem(context, "更新 pod 失败", "")
-//}
+// }
 //
-//func (p *Pod) Create(context *gin.Context) {
+// func (p *Pod) Create(context *gin.Context) {
 //
 //	// namespace := context.GetString(consts.ValidatorPrefix + "namespace")
 //	// podName := context.GetString(consts.ValidatorPrefix + "pod_name")
@@ -149,4 +115,4 @@ func (p *Pod) List(context *gin.Context) {
 //		return
 //	}
 //	response.Success(context, "pod already exists "+pod.Name, "")
-//}
+// }
