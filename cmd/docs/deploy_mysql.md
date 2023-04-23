@@ -15,7 +15,7 @@
 https://github.com/meob/my2Collector    # 从github找到my2.sql，复制里面的代码，粘贴到mysql管理端，直接使用root账号执行即可，或者使用官方推荐的sql导入方式同样可以初始化一个my2数据库。
 
 # step1：添加数据源
-齿轮 —— Data Source —— Add data source —— 输入关键词mysql 搜索 —— 选中数据源，出现配置界面，进行账号、密码、端口配置 —— sava&test。
+齿轮 —— data Source —— Add data source —— 输入关键词mysql 搜索 —— 选中数据源，出现配置界面，进行账号、密码、端口配置 —— sava&test。
 
 # step2： grafana 官方寻找 mysql 监控模板，例如：https://grafana.com/grafana/dashboards/7991，注意模板说明，是否依赖于my2数据库，如果依赖my2数据库，就必须先导入my2.sql数据库。  
 https://grafana.com/grafana/dashboards  // grafana 搜索模板地址，找到模板复制 id 号，本次模板ID ：7991 

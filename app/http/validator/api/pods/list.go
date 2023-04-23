@@ -2,7 +2,7 @@ package pods
 
 import (
 	"ginskeleton/app/global/consts"
-	"ginskeleton/app/http/controller/api"
+	controller_api "ginskeleton/app/http/controller/api"
 	common_data_type "ginskeleton/app/http/validator/common/data_type"
 	"ginskeleton/app/http/validator/core/data_transfer"
 	"ginskeleton/app/utils/response"
@@ -33,6 +33,6 @@ func (p PodList) CheckParams(context *gin.Context) {
 	} else {
 		// 验证完成，调用控制器,并将验证器成员(字段)递给控制器，保持上下文数据一致性
 		// 调用 controller 层
-		(&api.Pod{}).List(extraAddBindDataContext)
+		(&controller_api.Pod{}).List(extraAddBindDataContext)
 	}
 }

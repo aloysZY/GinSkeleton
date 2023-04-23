@@ -11,7 +11,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>websocket client</title>
+    <title>websocket Client</title>
 	　<script src="http://libs.baidu.com/jquery/2.1.4/jquery.min.js"></script>
 </head>
 <body>
@@ -19,7 +19,7 @@
 
 <div>
 
-    <h3>websocket client  测试代码</h3>
+    <h3>websocket Client  测试代码</h3>
 	<label>发送消息：</label>
 	<br/>
 	<textarea id="sendmsg">

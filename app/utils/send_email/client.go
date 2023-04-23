@@ -1,8 +1,8 @@
-package email
+package send_email
 
 import (
 	"ginskeleton/app/global/variable"
-	"ginskeleton/app/utils/email/my_email"
+	"ginskeleton/app/utils/send_email/my_email"
 )
 
 func NewEmail() *my_email.Email {

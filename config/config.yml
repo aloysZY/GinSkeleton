@@ -146,7 +146,5 @@ Captcha:
   length: 4   # 验证码生成时的长度
 
 Kubernetes:
-  UseClientType: "clientset"
-  Clientset:
-    IsInitGlobalClientset: 1
-    ConfigPath:
+  IsInitGlobalClient: 1
+  ConfigPath:

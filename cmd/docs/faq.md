@@ -55,7 +55,7 @@ app/http/validator/common/register_validator/register_validator.go
 
 关系型数据库驱动库其实是根据 config.yml中的配置初始化了一次，因此每种数据库全局只有一个连接，以后每一次都是从同一个驱动指针地址，通过ping() 从底层的连接池获取一个连接。用完也是自动释放的.
 看起来每一个表要初始化一次，主要是为了解决任何一个表可以随意切换到别的数据库连接，解决数据库多源场景。
-每种数据库，在整个项目全局就一个数据库驱动初始化后的连接池：app/utils/sql_factory/client.go 
+每种数据库，在整个项目全局就一个数据库驱动初始化后的连接池：app/utils/sql_factory/Client.go 
 
 ```
 

@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"ginskeleton/app/utils/kube_client"
+	"ginskeleton/app/utils/send_email"
 	"log"
 	"os"
 	"path/filepath"
@@ -15,13 +16,17 @@ import (
 	"ginskeleton/app/http/validator/common/register_validator"
 	"ginskeleton/app/service/sys_log_hook"
 	"ginskeleton/app/utils/casbin_v2"
-	"ginskeleton/app/utils/email"
 	"ginskeleton/app/utils/gorm_v2"
 	"ginskeleton/app/utils/snow_flake"
 	"ginskeleton/app/utils/validator_translation"
 	"ginskeleton/app/utils/websocket/core"
 	"ginskeleton/app/utils/yml_config"
 	"ginskeleton/app/utils/zap_factory"
+)
+
+const (
+	public          = "/public"
+	createDirectory = "：beginning Create directory"
 )
 
 // 检查项目必须的非编译目录是否存在，避免编译后调用的时候缺失相关目录
@@ -35,9 +40,9 @@ func checkRequiredFolders() {
 	}
 
 	// 2.检查public目录是否存在
-	if _, err := os.Stat(variable.BasePath + "/public"); err != nil {
+	if _, err := os.Stat(variable.BasePath + public); err != nil {
 		/*log.Fatal(my_errors.ErrorsPublicNotExists + err.Error())*/
-		log.Println(my_errors.ErrorsPublicNotExists + "：beginning Create directory")
+		log.Println(my_errors.ErrorsPublicNotExists + createDirectory)
 		// 创建目录的时候，最后要有"/"
 		err := os.MkdirAll(filepath.Dir(variable.BasePath+"/public/"), 0755)
 		if err != nil && !os.IsExist(err) {
@@ -47,7 +52,7 @@ func checkRequiredFolders() {
 
 	// 3.检查storage/logs 目录是否存在
 	if _, err := os.Stat(variable.BasePath + "/storage/logs"); err != nil {
-		log.Println(my_errors.ErrorsStorageLogsNotExists + "：beginning Create directory")
+		log.Println(my_errors.ErrorsStorageLogsNotExists + createDirectory)
 		err := os.MkdirAll(filepath.Dir(variable.BasePath+"/storage/logs/"), 0755)
 		if err != nil && !os.IsExist(err) {
 			log.Fatal(my_errors.ErrorCreateFailed + err.Error())
@@ -55,22 +60,22 @@ func checkRequiredFolders() {
 	}
 
 	// 4.自动创建软连接、更好的管理静态资源，上传的文件链接到public目录，nginx配置也是这个，
-	if _, err := os.Stat(variable.BasePath + "/public"); err == nil {
-		if err = os.RemoveAll(variable.BasePath + "/public"); err != nil {
+	if _, err := os.Stat(variable.BasePath + public); err == nil {
+		if err = os.RemoveAll(variable.BasePath + public); err != nil {
 			log.Fatal(my_errors.ErrorsSoftLinkDeleteFail + err.Error())
 		}
 	}
 
 	// 5.创建/storage/app 这是文件上传目录
 	if _, err := os.Stat(variable.BasePath + "/storage/app"); err != nil {
-		log.Println(my_errors.ErrorsStorageLogsNotExists + "：beginning Create directory")
+		log.Println(my_errors.ErrorsStorageLogsNotExists + createDirectory)
 		if err := os.MkdirAll(filepath.Dir(variable.BasePath+"/storage/app/"), 0755); err != nil && !os.IsExist(err) {
 			log.Fatal(my_errors.ErrorCreateFailed + err.Error())
 		}
 	}
 
 	// 6./storage/app 这是文件上传目录创建软连接，public/storage
-	if err := os.Symlink(variable.BasePath+"/storage/app", variable.BasePath+"/public"); err != nil {
+	if err := os.Symlink(variable.BasePath+"/storage/app", variable.BasePath+public); err != nil {
 		log.Fatal(my_errors.ErrorsSoftLinkCreateFail + err.Error())
 	}
 
@@ -146,29 +151,30 @@ func init() {
 		log.Fatal(my_errors.ErrorsValidatorTransInitFail + err.Error())
 	}
 
-	// 11.初始化clientset
-	if variable.ConfigYml.GetInt("Kubernetes.Clientset.IsInitGlobalClientset") == 1 {
-		controllerclientset, err := kube_client.NewKubeControllerclientset(variable.ConfigYml.GetString("Kubernetes.Clientset.ConfigPath"), 30)
+	// 11.如果设置发送邮件，就初始化邮件
+	if variable.ConfigYml.GetInt("Email.IsToEmail") == 1 {
+		variable.EmailClient = send_email.NewEmail()
+	}
+
+	// 12.初始化client
+	if variable.ConfigYml.GetInt("Kubernetes.IsInitGlobalClient") == 1 {
+		controllerclient, err := kube_client.NewKubeControllerclient(variable.ConfigYml.GetString("Kubernetes.ConfigPath"), 30)
 		if err != nil {
-			variable.ZapLog.Error("Error creating Kubernetes controllerclientset: ", zap.Error(err))
+			variable.ZapLog.Error("Error creating Kubernetes client: ", zap.Error(err))
 			return
 		}
 		stopPodch := make(chan struct{})
 		go func() {
-			controllerclientset.Run(stopPodch)
+			controllerclient.Run(stopPodch)
 			<-stopPodch
 		}()
 		for {
-			if controllerclientset.Status == 1 {
+			if controllerclient.Status == 1 {
 				break
 			}
 			time.Sleep(time.Second * 1)
 		}
-		variable.KubeControllerClientset = controllerclientset
+		variable.ControllerClient = controllerclient
 	}
 
-	// 12.如果设置发送邮件，就初始化邮件
-	if variable.ConfigYml.GetInt("Email.IsToEmail") == 1 {
-		variable.EmailClient = email.NewEmail()
-	}
 }

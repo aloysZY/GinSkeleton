@@ -206,7 +206,7 @@ ALTER TABLE ONLY web.tb_users ALTER COLUMN id SET DEFAULT nextval('web.tb_users_
 --
 -- TOC entry 2848 (class 0 OID 16609)
 -- Dependencies: 200
--- Data for name: tb_auth_casbin_rule; Type: TABLE DATA; Schema: web; Owner: postgres
+-- data for name: tb_auth_casbin_rule; Type: TABLE DATA; Schema: web; Owner: postgres
 --
 
 
@@ -214,7 +214,7 @@ ALTER TABLE ONLY web.tb_users ALTER COLUMN id SET DEFAULT nextval('web.tb_users_
 --
 -- TOC entry 2850 (class 0 OID 16629)
 -- Dependencies: 202
--- Data for name: tb_oauth_access_tokens; Type: TABLE DATA; Schema: web; Owner: postgres
+-- data for name: tb_oauth_access_tokens; Type: TABLE DATA; Schema: web; Owner: postgres
 --
 
 
@@ -222,7 +222,7 @@ ALTER TABLE ONLY web.tb_users ALTER COLUMN id SET DEFAULT nextval('web.tb_users_
 --
 -- TOC entry 2846 (class 0 OID 16591)
 -- Dependencies: 198
--- Data for name: tb_users; Type: TABLE DATA; Schema: web; Owner: postgres
+-- data for name: tb_users; Type: TABLE DATA; Schema: web; Owner: postgres
 --
 
 

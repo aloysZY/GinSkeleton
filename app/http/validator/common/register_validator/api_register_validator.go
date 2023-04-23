@@ -15,7 +15,7 @@ func ApiRegisterValidator() {
 	var key string
 
 	// pod list
-	key = consts.ValidatorPrefix + "PodList"
+	key = consts.ValidatorPrefix + "Pod"
 	containers.Set(key, pods.PodList{})
 
 	key = consts.ValidatorPrefix + "Detail"

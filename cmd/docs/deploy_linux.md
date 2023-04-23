@@ -14,8 +14,8 @@ grafana :  数据展示系统，从 prometheus 提供的接口获取数据，最
 ```code  
 # 移除老版本相关的残留信息
 yum remove docker \
-                  docker-client \
-                  docker-client-latest \
+                  docker-Client \
+                  docker-Client-latest \
                   docker-common \
                   docker-latest \
                   docker-latest-logrotate \

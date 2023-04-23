@@ -2,12 +2,12 @@ package variable
 
 import (
 	"ginskeleton/app/utils/kube_client"
+	"ginskeleton/app/utils/send_email/my_email"
 	"log"
 	"os"
 	"strings"
 
 	"ginskeleton/app/global/my_errors"
-	"ginskeleton/app/utils/email/my_email"
 	"ginskeleton/app/utils/snow_flake/snowflake_interf"
 	"ginskeleton/app/utils/yml_config/ymlconfig_interf"
 
@@ -42,14 +42,14 @@ var (
 	// websocket
 	WebsocketHub              interface{}
 	WebsocketHandshakeSuccess = `{"code":200,"msg":"ws连接成功","data":""}`
-	WebsocketServerPingMsg    = "Server->Ping->Client"
+	WebsocketServerPingMsg    = "Server->Ping->client"
 
 	// casbin 全局操作指针
 	Enforcer *casbin.SyncedEnforcer
 
 	//  用户自行定义其他全局变量 ↓
 
-	KubeControllerClientset *kube_client.KubeControllerClientset
+	ControllerClient *kube_client.KubeControllerClient
 
 	EmailClient *my_email.Email
 )

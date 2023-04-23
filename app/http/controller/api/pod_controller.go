@@ -2,9 +2,11 @@ package api
 
 import (
 	"ginskeleton/app/global/consts"
-	"ginskeleton/app/service/dataselector"
-	"ginskeleton/app/service/kube"
+	service_clientset "ginskeleton/app/service/kuberentes/client/clientset"
+	service_data "ginskeleton/app/service/kuberentes/data"
+	service_pod "ginskeleton/app/service/kuberentes/data/pod"
 	"ginskeleton/app/utils/response"
+	response_pod "ginskeleton/app/utils/response/pod"
 
 	"github.com/gin-gonic/gin"
 )
@@ -20,39 +22,48 @@ func (p *Pod) List(context *gin.Context) {
 	limit := context.GetFloat64(consts.ValidatorPrefix + "limit")
 	page := context.GetFloat64(consts.ValidatorPrefix + "page")
 
-	// 根据命名空间查询 pod
-	dataCell, err := kube.CreatePodFactory(context).List(namespace)
+	// 根据命名空间查询 pod，这里分使用什么类型的 client
+	dataList, err := service_clientset.CreateClientsetFactory(context).ListPod(namespace)
 	if err != nil {
 		response.ErrorSystem(context, "获取 pod 列表失败", nil) // 返回前端，还是错误封装一下
 		return
 	}
 
-	// PodList 进行类型转换，排序和根据 pood 名称过滤
-	data := dataselector.CreateDataSelectorFactory(dataCell, filterName, int(limit), int(page)).PodList()
+	// service_data.PodToCells(dataList类型转换
+	//Filter 过滤，根据特定字段去过滤
+	//Sort结果进行排序
+	//Paginate 根据limit,page进行分页,排序后进行分页，不然分页了数据就被切割了
+	//FromPod 转化回 corev1.pod类型
+	podList := service_data.CreateDataFactory(service_pod.PodToCells(dataList), filterName, int(limit), int(page)).Filter().Sort().Paginate().FromPod()
 
-	response.Success(context, "podList", &kube.PodResp{
-		Total: len(dataCell), // 返回的 pod 总数量，data 数据的长度不准了，应为处理了数据
-		Items: data,
+	response.Success(context, "podList", &response.PodResp{
+		Total: len(dataList),             // 返回的 pod 总数量，data 数据的长度不准了，应为处理了数据
+		Items: response_pod.Pod(podList), // 返回特定数据，进行数据处理
 	})
 }
 
-// func (p *Pod) Detail(context *gin.Context) {
-//	podName := context.GetString(consts.ValidatorPrefix + "pod_name")
-//	namespace := context.GetString(consts.ValidatorPrefix + "namespace")
-//
-//	// 获取相关命名空间下所有 pod，namespace 不能为空
-//	pod, err := kube.CreatePodFactory().Detail(namespace, podName)
-//	if err != nil {
-//		if strings.HasSuffix(err.Error(), "not found") {
-//			response.Success(context, err.Error(), nil)
-//			return
-//		}
-//		response.ErrorSystem(context, "获取 pod 详情失败", nil) // 返回前端，还是错误封装一下
-//		return
-//	}
-//	response.Success(context, "Detail", pod)
-// }
-//
+/*
+func (p *Pod) Detail(context *gin.Context) {
+	podName := context.GetString(consts.ValidatorPrefix + "pod_name")
+	namespace := context.GetString(consts.ValidatorPrefix + "namespace")
+
+	// 获取相关命名空间下所有 pod，namespace 不能为空
+	dataDetail, err := service_clientset.CreateClientsetFactory(context).DetailPod(namespace, podName)
+	if err != nil {
+		if strings.HasSuffix(err.Error(), "not found") {
+			response.Success(context, err.Error(), nil)
+			return
+		}
+		response.ErrorSystem(context, "获取 pod 详情失败", nil) // 返回前端，还是错误封装一下
+		return
+	}
+	pod := data.CreateDataSelectorFactory(dataDetail, "", 0, 0).Pod()
+	response.Success(context, "Detail", &response_pod.PodResp{
+		Total: len(dataDetail), // 返回的 pod 总数量，data 数据的长度不准了，应为处理了数据
+		Items: pod,
+	})
+}*/
+
 // func (p *Pod) Delete(context *gin.Context) {
 //	podName := context.GetString(consts.ValidatorPrefix + "pod_name")
 //	namespace := context.GetString(consts.ValidatorPrefix + "namespace")
@@ -103,7 +114,7 @@ func (p *Pod) List(context *gin.Context) {
 //	}
 //
 //	// 1.判断 pod 是否存在
-//	_, err = kube.CreatePodFactory().Detail(pod.Namespace, pod.Name)
+//	_, err = kube.CreatePodFactory().Detail(pod.Namespace, pod.name)
 //	if err != nil && strings.HasSuffix(err.Error(), "not found") {
 //		// 2.不存在创建
 //		if err := kube.CreatePodFactory().Create(pod.Namespace, pod); err != nil {
@@ -114,5 +125,5 @@ func (p *Pod) List(context *gin.Context) {
 //		response.Success(context, "Create pod success!", "")
 //		return
 //	}
-//	response.Success(context, "pod already exists "+pod.Name, "")
+//	response.Success(context, "pod already exists "+pod.name, "")
 // }

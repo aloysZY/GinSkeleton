@@ -1,68 +1,45 @@
-package kube
+package clientset
 
 import (
-	"context"
+	"errors"
+	"fmt"
 	"ginskeleton/app/global/variable"
-	"ginskeleton/app/model/api"
 
+	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 )
 
-// 构造函数
-func CreatePodFactory(ctx context.Context) *pod {
-	p := &pod{ctx: ctx}
-	p.clientset = api.CreateClientsetFactory()
-	return p
-
-}
-
-// 定义一个空结构体，主要是为了实现一些方法
-type pod struct {
-	ctx       context.Context
-	clientset *api.Clientset
-}
-
-type PodResp struct {
-	Total int       `json:"total"`
-	Items []PodList `json:"items"`
-}
-
-// 封装一个二级目录列表,返回信息
-type PodList struct {
-	Name       string              `json:"name"`
-	Namespace  string              `json:"namespace"`
-	Status     string              `json:"status"`
-	Containers []map[string]string `json:"containers"`
-}
-
 // 获取pod列表,支持过滤,排序,分页,模糊查找
-func (p *pod) List(namespace string) ([]*corev1.Pod, error) {
+func (s *Service) ListPod(namespace string) ([]*corev1.Pod, error) {
 	// 调用 model 层查询 pod
-	podList, err := p.clientset.List(namespace)
-	//podList, err := api_model.CreateClientsetFactory().List(namespace)
+	podList, err := s.client.ListPod(namespace)
 	if err != nil {
-		variable.ZapLog.Sugar().Info("List pod failed error: %v\n", err)
+		variable.ZapLog.Sugar().Info("ClientsetList pod failed error: %v\n", err)
 		return nil, err
 	}
 	return podList, nil
 }
 
-/*// 获取单个pod
-func (p *pod) Detail(namespace, podName string) (*corev1.Pod, error) {
+// 获取单个pod
+func (s *Service) DetailPod(namespace, podName string) ([]*corev1.Pod, error) {
 	// metav1.ListOptions{} 用于过滤List数据,如label,field等
+	var podList []*corev1.Pod
 	// 获取单独的 pod，要指定命名空间，不能为空
-	pod, err := variable.Clientset.CoreV1().Pods(namespace).Get(context.TODO(), podName, metav1.GetOptions{})
+	pod, err := s.client.DetailPod(namespace, podName)
+	//pod, err := variable.clientset.CoreV1().Pods(namespace).Get(context.TODO(), podName, metav1.GetOptions{})
 	if err != nil {
 		variable.ZapLog.Info("获取 pod 详情失败", zap.Error(err))
 		// variable.ZapLog.Info("获取 pod 详情失败->", zap.String("namespace", namespace), zap.Any("pod", err))
 		// 返回给上一层,最终返回给前端,前端捕获到后打印出来
 		return nil, errors.New(fmt.Sprintf("获取 pod 详情失败, namespace: %s, pod: %s", namespace, err))
 	}
-	return pod, nil
+	podList = append(podList, pod)
+	return podList, nil
 }
 
+/*
 func (p *pod) Delete(namespace, podName string) error {
-	err := variable.Clientset.CoreV1().Pods(namespace).Delete(context.TODO(), podName, metav1.DeleteOptions{})
+	err := variable.clientset.CoreV1().Pods(namespace).Delete(context.TODO(), podName, metav1.DeleteOptions{})
 	if err != nil {
 		variable.ZapLog.Info("删除 pod 失败", zap.Error(err))
 		// variable.ZapLog.Info("获取 pod 详情失败->", zap.String("namespace", namespace), zap.Any("pod", err))
@@ -96,7 +73,7 @@ func (p *pod) Update(namespace, podName, content string) error {
 	// 	return err
 	// }
 	//
-	// _, err = variable.Clientset.CoreV1().Pods(namespace).Update(context.TODO(), detail, metav1.UpdateOptions{})
+	// _, err = variable.clientset.CoreV1().Pods(namespace).Update(context.TODO(), detail, metav1.UpdateOptions{})
 	// if err != nil {
 	// 	variable.ZapLog.Sugar().Info("Update pod %v failed: %v", podName, err)
 	// 	return err
@@ -105,7 +82,7 @@ func (p *pod) Update(namespace, podName, content string) error {
 }
 
 func (p *pod) Create(namespace string, pod *corev1.Pod) error {
-	_, err := variable.Clientset.CoreV1().Pods(namespace).Create(context.TODO(), pod, metav1.CreateOptions{})
+	_, err := variable.clientset.CoreV1().Pods(namespace).Create(context.TODO(), pod, metav1.CreateOptions{})
 	if err != nil {
 		// variable.ZapLog.Info("Create pod err :", zap.Error(err))
 		return err
