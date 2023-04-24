@@ -8,6 +8,8 @@ import (
 
 	"ginskeleton/app/global/my_errors"
 	"ginskeleton/app/global/variable"
+	"ginskeleton/app/utils/tarcer"
+
 	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
@@ -95,6 +97,7 @@ func GetSqlDriver(sqlType string, readDbIsOpen int, dbConf ...ConfigParams) (*go
 		rawDb.SetConnMaxLifetime(variable.ConfigGormv2Yml.GetDuration("Gormv2."+sqlType+".Write.SetConnMaxLifetime") * time.Second)
 		rawDb.SetMaxIdleConns(variable.ConfigGormv2Yml.GetInt("Gormv2." + sqlType + ".Write.SetMaxIdleConns"))
 		rawDb.SetMaxOpenConns(variable.ConfigGormv2Yml.GetInt("Gormv2." + sqlType + ".Write.SetMaxOpenConns"))
+		gormDb.Use(&tarcer.OpentracingPlugin{})
 		return gormDb, nil
 	}
 }

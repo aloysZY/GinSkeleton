@@ -1,12 +1,14 @@
 package bootstrap
 
 import (
-	"ginskeleton/app/utils/kube_client"
-	"ginskeleton/app/utils/send_email"
 	"log"
 	"os"
 	"path/filepath"
 	"time"
+
+	"ginskeleton/app/utils/jaeger"
+	"ginskeleton/app/utils/kube_client"
+	"ginskeleton/app/utils/send_email"
 
 	"go.uber.org/zap"
 
@@ -88,7 +90,7 @@ func init() {
 	checkRequiredFolders()
 
 	// 3.初始化表单参数验证器，注册在容器（Web、Api共用容器）
-	// register_validator.WebRegisterValidator()
+	register_validator.WebRegisterValidator()
 	register_validator.ApiRegisterValidator()
 
 	// 4.启动针对配置文件(confgi.yml、gorm_v2.yml)变化的监听， 配置文件操作指针，初始化为全局变量
@@ -155,6 +157,8 @@ func init() {
 	if variable.ConfigYml.GetInt("Email.IsToEmail") == 1 {
 		variable.EmailClient = send_email.NewEmail()
 	}
+
+	variable.Tracer, _, _ = jaeger.InitJaeger()
 
 	// 12.初始化client
 	if variable.ConfigYml.GetInt("Kubernetes.IsInitGlobalClient") == 1 {

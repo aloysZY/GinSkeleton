@@ -1,11 +1,13 @@
 package gin_release
 
 import (
+	"time"
+
 	"ginskeleton/app/global/variable"
 	"ginskeleton/app/http/middleware/access_log"
 	"ginskeleton/app/http/middleware/context_timeout"
 	"ginskeleton/app/http/middleware/recovery"
-	"time"
+	"ginskeleton/app/http/middleware/tracering"
 
 	"github.com/gin-gonic/gin"
 )
@@ -24,6 +26,8 @@ func ReleaseRouter() *gin.Engine {
 	// 载入gin的中间件，关键是第二个中间件，我们对它进行了自定义重写，将可能的 panic 异常等，统一使用 zaplog 接管，保证全局日志打印统一
 	engine.Use(access_log.GinAccessLogger(),
 		recovery.CustomRecovery(),
-		context_timeout.ContextTimeout(timeout*time.Second))
+		context_timeout.ContextTimeout(timeout*time.Second),
+		tracering.Tracering(),
+	)
 	return engine
 }

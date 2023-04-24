@@ -1,11 +1,14 @@
 package variable
 
 import (
-	"ginskeleton/app/utils/kube_client"
-	"ginskeleton/app/utils/send_email/my_email"
 	"log"
 	"os"
 	"strings"
+
+	"ginskeleton/app/utils/kube_client"
+	"ginskeleton/app/utils/send_email/my_email"
+
+	"github.com/opentracing/opentracing-go"
 
 	"ginskeleton/app/global/my_errors"
 	"ginskeleton/app/utils/snow_flake/snowflake_interf"
@@ -52,6 +55,8 @@ var (
 	ControllerClient *kube_client.KubeControllerClient
 
 	EmailClient *my_email.Email
+
+	Tracer opentracing.Tracer
 )
 
 func init() {

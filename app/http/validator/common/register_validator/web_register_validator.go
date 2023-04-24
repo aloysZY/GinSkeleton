@@ -3,8 +3,6 @@ package register_validator
 import (
 	"ginskeleton/app/core/container"
 	"ginskeleton/app/global/consts"
-	"ginskeleton/app/http/validator/common/upload_files"
-	"ginskeleton/app/http/validator/common/websocket"
 	"ginskeleton/app/http/validator/web/users"
 )
 
@@ -16,28 +14,28 @@ func WebRegisterValidator() {
 	//  key 按照前缀+模块+验证动作 格式，将各个模块验证注册在容器
 	var key string
 	// Users 模块表单验证器按照 key => value 形式注册在容器，方便路由模块中调用
-	key = consts.ValidatorPrefix + "UsersRegister"
-	containers.Set(key, users.Register{})
+	// key = consts.ValidatorPrefix + "UsersRegister"
+	// containers.Set(key, users.Register{})
 	key = consts.ValidatorPrefix + "UsersLogin"
 	containers.Set(key, users.Login{})
-	key = consts.ValidatorPrefix + "RefreshToken"
-	containers.Set(key, users.RefreshToken{})
-
-	// Users基本操作（CURD）
-	key = consts.ValidatorPrefix + "UsersShow"
-	containers.Set(key, users.Show{})
-	key = consts.ValidatorPrefix + "UsersStore"
-	containers.Set(key, users.Store{})
-	key = consts.ValidatorPrefix + "UsersUpdate"
-	containers.Set(key, users.Update{})
-	key = consts.ValidatorPrefix + "UsersDestroy"
-	containers.Set(key, users.Destroy{})
-
-	// 文件上传
-	key = consts.ValidatorPrefix + "UploadFiles"
-	containers.Set(key, upload_files.UpFiles{})
-
-	// Websocket 连接验证器
-	key = consts.ValidatorPrefix + "WebsocketConnect"
-	containers.Set(key, websocket.Connect{})
+	// key = consts.ValidatorPrefix + "RefreshToken"
+	// containers.Set(key, users.RefreshToken{})
+	//
+	// // Users基本操作（CURD）
+	// key = consts.ValidatorPrefix + "UsersShow"
+	// containers.Set(key, users.Show{})
+	// key = consts.ValidatorPrefix + "UsersStore"
+	// containers.Set(key, users.Store{})
+	// key = consts.ValidatorPrefix + "UsersUpdate"
+	// containers.Set(key, users.Update{})
+	// key = consts.ValidatorPrefix + "UsersDestroy"
+	// containers.Set(key, users.Destroy{})
+	//
+	// // 文件上传
+	// key = consts.ValidatorPrefix + "UploadFiles"
+	// containers.Set(key, upload_files.UpFiles{})
+	//
+	// // Websocket 连接验证器
+	// key = consts.ValidatorPrefix + "WebsocketConnect"
+	// containers.Set(key, websocket.Connect{})
 }
