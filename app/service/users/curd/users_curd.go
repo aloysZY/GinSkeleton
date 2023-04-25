@@ -1,12 +1,14 @@
 package curd
 
 import (
+	"context"
+
 	"ginskeleton/app/model"
 	"ginskeleton/app/utils/md5_encrypt"
 )
 
-func CreateUserCurdFactory() *UsersCurd {
-	return &UsersCurd{model.CreateUserFactory("")}
+func CreateUserCurdFactory(context context.Context) *UsersCurd {
+	return &UsersCurd{model.CreateUserFactory(context, "")}
 }
 
 type UsersCurd struct {

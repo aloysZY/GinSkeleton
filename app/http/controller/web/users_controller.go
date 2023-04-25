@@ -23,7 +23,7 @@ func (u *Users) Register(context *gin.Context) {
 	userName := context.GetString(consts.ValidatorPrefix + "user_name")
 	pass := context.GetString(consts.ValidatorPrefix + "pass")
 	userIp := context.ClientIP()
-	if curd.CreateUserCurdFactory().Register(userName, pass, userIp) {
+	if curd.CreateUserCurdFactory(context.Request.Context()).Register(userName, pass, userIp) {
 		response.Success(context, consts.CurdStatusOkMsg, "")
 	} else {
 		response.Fail(context, consts.CurdRegisterFailCode, consts.CurdRegisterFailMsg, "")
@@ -35,13 +35,13 @@ func (u *Users) Login(context *gin.Context) {
 	userName := context.GetString(consts.ValidatorPrefix + "user_name")
 	pass := context.GetString(consts.ValidatorPrefix + "pass")
 	phone := context.GetString(consts.ValidatorPrefix + "phone")
-	userModelFact := model.CreateUserFactory("")
+	userModelFact := model.CreateUserFactory(context.Request.Context(), "")
 	userModel := userModelFact.Login(userName, pass)
 
 	if userModel != nil {
 		userTokenFactory := userstoken.CreateUserFactory()
 		if userToken, err := userTokenFactory.GenerateToken(userModel.Id, userModel.UserName, userModel.Phone, variable.ConfigYml.GetInt64("Token.JwtTokenCreatedExpireAt")); err == nil {
-			if userTokenFactory.RecordLoginToken(userToken, context.ClientIP()) {
+			if userTokenFactory.RecordLoginToken(context.Request.Context(), userToken, context.ClientIP()) {
 				data := gin.H{
 					"userId":     userModel.Id,
 					"user_name":  userName,
@@ -62,7 +62,7 @@ func (u *Users) Login(context *gin.Context) {
 // 刷新用户token
 func (u *Users) RefreshToken(context *gin.Context) {
 	oldToken := context.GetString(consts.ValidatorPrefix + "token")
-	if newToken, ok := userstoken.CreateUserFactory().RefreshToken(oldToken, context.ClientIP()); ok {
+	if newToken, ok := userstoken.CreateUserFactory().RefreshToken(context.Request.Context(), oldToken, context.ClientIP()); ok {
 		res := gin.H{
 			"token": newToken,
 		}
@@ -83,7 +83,7 @@ func (u *Users) Show(context *gin.Context) {
 	page := context.GetFloat64(consts.ValidatorPrefix + "page")
 	limit := context.GetFloat64(consts.ValidatorPrefix + "limit")
 	limitStart := (page - 1) * limit
-	counts, showlist := model.CreateUserFactory("").Show(userName, int(limitStart), int(limit))
+	counts, showlist := model.CreateUserFactory(context.Request.Context(), "").Show(userName, int(limitStart), int(limit))
 	if counts > 0 && showlist != nil {
 		response.Success(context, consts.CurdStatusOkMsg, gin.H{"counts": counts, "list": showlist})
 	} else {
@@ -99,7 +99,7 @@ func (u *Users) Store(context *gin.Context) {
 	phone := context.GetString(consts.ValidatorPrefix + "phone")
 	remark := context.GetString(consts.ValidatorPrefix + "remark")
 
-	if curd.CreateUserCurdFactory().Store(userName, pass, realName, phone, remark) {
+	if curd.CreateUserCurdFactory(context.Request.Context()).Store(userName, pass, realName, phone, remark) {
 		response.Success(context, consts.CurdStatusOkMsg, "")
 	} else {
 		response.Fail(context, consts.CurdCreatFailCode, consts.CurdCreatFailMsg, "")
@@ -118,14 +118,14 @@ func (u *Users) Update(context *gin.Context) {
 	userIp := context.ClientIP()
 
 	// 检查正在修改的用户名是否被其他人使用
-	if model.CreateUserFactory("").UpdateDataCheckUserNameIsUsed(int(userId), userName) > 0 {
+	if model.CreateUserFactory(context.Request.Context(), "").UpdateDataCheckUserNameIsUsed(int(userId), userName) > 0 {
 		response.Fail(context, consts.CurdUpdateFailCode, consts.CurdUpdateFailMsg+", "+userName+" 已经被其他人使用", "")
 		return
 	}
 
 	// 注意：这里没有实现更加精细的权限控制逻辑，例如：超级管理管理员可以更新全部用户数据，普通用户只能修改自己的数据。目前只是验证了token有效、合法之后就可以进行后续操作
 	// 实际使用请根据真是业务实现权限控制逻辑、再进行数据库操作
-	if curd.CreateUserCurdFactory().Update(int(userId), userName, pass, realName, phone, remark, userIp) {
+	if curd.CreateUserCurdFactory(context.Request.Context()).Update(int(userId), userName, pass, realName, phone, remark, userIp) {
 		response.Success(context, consts.CurdStatusOkMsg, "")
 	} else {
 		response.Fail(context, consts.CurdUpdateFailCode, consts.CurdUpdateFailMsg, "")
@@ -137,7 +137,7 @@ func (u *Users) Update(context *gin.Context) {
 func (u *Users) Destroy(context *gin.Context) {
 	// 表单参数验证中的int、int16、int32 、int64、float32、float64等数字键（字段），请统一使用 GetFloat64() 获取，其他函数无效
 	userId := context.GetFloat64(consts.ValidatorPrefix + "id")
-	if model.CreateUserFactory("").Destroy(int(userId)) {
+	if model.CreateUserFactory(context.Request.Context(), "").Destroy(int(userId)) {
 		response.Success(context, consts.CurdStatusOkMsg, "")
 	} else {
 		response.Fail(context, consts.CurdDeleteFailCode, consts.CurdDeleteFailMsg, "")

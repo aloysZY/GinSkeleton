@@ -30,17 +30,6 @@ func Tracering() func(c *gin.Context) {
 		}
 		defer span.Finish()
 
-		spacnDb, _ := opentracing.StartSpanFromContextWithTracer(
-			c.Request.Context(),
-			variable.Tracer,
-			c.Request.URL.Path,
-		)
-		ctx := opentracing.ContextWithSpan(newCtx, spacnDb)
-
-		// 6. 将上下文传入DB实例，生成Session会话
-		// 这样子就能把这个会话的全部信息反馈给Jaeger
-		variable.GormDbMysql = variable.GormDbMysql.WithContext(ctx)
-
 		var traceID string
 		var spanID string
 		var spanContextID = span.Context()
