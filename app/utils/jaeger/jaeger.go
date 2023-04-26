@@ -11,7 +11,7 @@ import (
 func InitJaeger() (tracer opentracing.Tracer, closer io.Closer, err error) {
 	// 根据配置初始化Tracer 返回Closer
 	tracer, closer, err = (&config.Configuration{
-		ServiceName: "gormTracingxxx",
+		ServiceName: "333",
 		Disabled:    false,
 		Sampler: &config.SamplerConfig{
 			Type: jaeger.SamplerTypeConst,

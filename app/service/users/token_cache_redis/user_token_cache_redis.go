@@ -8,10 +8,12 @@ import (
 	"ginskeleton/app/global/variable"
 	"ginskeleton/app/utils/md5_encrypt"
 	"ginskeleton/app/utils/redis_factory"
+
 	"go.uber.org/zap"
 )
 
 func CreateUsersTokenCacheFactory(userId int64) *userTokenCacheRedis {
+	// redCli := redis_factory.GetOneRedisClient()
 	redCli := redis_factory.GetOneRedisClient()
 	if redCli == nil {
 		return nil

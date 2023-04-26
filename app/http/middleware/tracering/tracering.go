@@ -28,6 +28,7 @@ func Tracering() func(c *gin.Context) {
 				opentracing.Tag{Key: string(ext.Component), Value: "HTTP"},
 			)
 		}
+
 		defer span.Finish()
 
 		var traceID string

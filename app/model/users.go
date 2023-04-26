@@ -1,12 +1,16 @@
 package model
 
 import (
-	"context"
+	ctx "context"
 	"time"
 
 	"ginskeleton/app/global/variable"
 	"ginskeleton/app/service/users/token_cache_redis"
 	"ginskeleton/app/utils/md5_encrypt"
+
+	"golang.org/x/net/context"
+
+	"github.com/opentracing/opentracing-go"
 
 	"go.uber.org/zap"
 )
@@ -65,7 +69,7 @@ func (u *UsersModel) Login(userName string, pass string) *UsersModel {
 }
 
 // 记录用户登陆（login）生成的token，每次登陆记录一次token
-func (u *UsersModel) OauthLoginToken(userId int64, token string, expiresAt int64, clientIp string) bool {
+func (u *UsersModel) OauthLoginToken(context context.Context, userId int64, token string, expiresAt int64, clientIp string) bool {
 	sql := `
 		INSERT   INTO  tb_oauth_access_tokens(fr_user_id,action_name,token,expires_at,client_ip)
 		SELECT  ?,'login',? ,?,? FROM DUAL    WHERE   NOT   EXISTS(SELECT  1  FROM  tb_oauth_access_tokens a WHERE  a.fr_user_id=?  AND a.action_name='login' AND a.token=?  )
@@ -75,7 +79,7 @@ func (u *UsersModel) OauthLoginToken(userId int64, token string, expiresAt int64
 	if u.Exec(sql, userId, token, time.Unix(expiresAt, 0).Format(variable.DateFormat), clientIp, userId, token).Error == nil {
 		// 异步缓存用户有效的token到redis
 		if variable.ConfigYml.GetInt("Token.IsCacheToRedis") == 1 {
-			go u.ValidTokenCacheToRedis(userId)
+			go u.ValidTokenCacheToRedis(context, userId)
 		}
 		return true
 	}
@@ -94,23 +98,28 @@ func (u *UsersModel) OauthRefreshConditionCheck(userId int64, oldToken string) b
 }
 
 // 用户刷新token
-func (u *UsersModel) OauthRefreshToken(userId, expiresAt int64, oldToken, newToken, clientIp string) bool {
+func (u *UsersModel) OauthRefreshToken(context context.Context, userId, expiresAt int64, oldToken, newToken, clientIp string) bool {
 	sql := "UPDATE   tb_oauth_access_tokens   SET  token=? ,expires_at=?,client_ip=?,updated_at=NOW(),action_name='refresh'  WHERE   fr_user_id=? AND token=?"
 	if u.Exec(sql, newToken, time.Unix(expiresAt, 0).Format(variable.DateFormat), clientIp, userId, oldToken).Error == nil {
 		// 异步缓存用户有效的token到redis
 		if variable.ConfigYml.GetInt("Token.IsCacheToRedis") == 1 {
-			go u.ValidTokenCacheToRedis(userId)
+			go u.ValidTokenCacheToRedis(context, userId)
 		}
-		go u.UpdateUserloginInfo(clientIp, userId)
+		go u.UpdateUserloginInfo(context, clientIp, userId)
 		return true
 	}
 	return false
 }
 
 // 更新用户登陆次数、最近一次登录ip、最近一次登录时间
-func (u *UsersModel) UpdateUserloginInfo(last_login_ip string, userId int64) {
+func (u *UsersModel) UpdateUserloginInfo(context context.Context, last_login_ip string, userId int64) {
+	span := opentracing.SpanFromContext(context)
+	newCtx := opentracing.ContextWithSpan(ctx.Background(), span)
+	userModelFact := CreateUserFactory(newCtx, "")
+
 	sql := "UPDATE  tb_users   SET  login_times=IFNULL(login_times,0)+1,last_login_ip=?,last_login_time=?  WHERE   id=?  "
-	_ = u.Exec(sql, last_login_ip, time.Now().Format(variable.DateFormat), userId)
+	// _ = u.Exec(sql, last_login_ip, time.Now().Format(variable.DateFormat), userId)
+	_ = userModelFact.Exec(sql, last_login_ip, time.Now().Format(variable.DateFormat), userId)
 }
 
 // 当用户更改密码后，所有的token都失效，必须重新登录
@@ -255,7 +264,9 @@ func (u *UsersModel) Destroy(id int) bool {
 
 // 后续两个函数专门处理用户 token 缓存到 redis 逻辑
 
-func (u *UsersModel) ValidTokenCacheToRedis(userId int64) {
+func (u *UsersModel) ValidTokenCacheToRedis(context context.Context, userId int64) {
+
+	// 先测试 redis 连接，异常就退出了
 	tokenCacheRedisFact := token_cache_redis.CreateUsersTokenCacheFactory(userId)
 	if tokenCacheRedisFact == nil {
 		variable.ZapLog.Error("redis连接失败，请检查配置")
@@ -263,9 +274,14 @@ func (u *UsersModel) ValidTokenCacheToRedis(userId int64) {
 	}
 	defer tokenCacheRedisFact.ReleaseRedisConn()
 
-	sql := "SELECT   token,expires_at  FROM  `tb_oauth_access_tokens`  WHERE   fr_user_id=?  AND  revoked=0  AND  expires_at>NOW() ORDER  BY  expires_at  DESC , updated_at  DESC  LIMIT ?"
+	span := opentracing.SpanFromContext(context)
+	newCtx := opentracing.ContextWithSpan(ctx.Background(), span)
+	userModelFact := CreateUserFactory(newCtx, "")
+
+	sql := "SELECT token,expires_at  FROM  `tb_oauth_access_tokens`  WHERE   fr_user_id=?  AND  revoked=0  AND  expires_at>NOW() ORDER  BY  expires_at  DESC , updated_at  DESC  LIMIT ?"
 	maxOnlineUsers := variable.ConfigYml.GetInt("Token.JwtTokenOnlineUsers")
-	rows, err := u.Raw(sql, userId, maxOnlineUsers).Rows()
+	// rows, err := u.Raw(sql, userId, maxOnlineUsers).Rows()
+	rows, err := userModelFact.Raw(sql, userId, maxOnlineUsers).Rows()
 	defer func() {
 		//  凡是获取原生结果集的查询，记得释放记录集
 		_ = rows.Close()
@@ -294,11 +310,14 @@ func (u *UsersModel) ValidTokenCacheToRedis(userId int64) {
 
 // DelTokenCacheFromRedis 用户密码修改后，删除redis所有的token
 func (u *UsersModel) DelTokenCacheFromRedis(userId int64) {
+
 	tokenCacheRedisFact := token_cache_redis.CreateUsersTokenCacheFactory(userId)
 	if tokenCacheRedisFact == nil {
 		variable.ZapLog.Error("redis连接失败，请检查配置")
 		return
 	}
+
 	tokenCacheRedisFact.ClearUserToken()
 	tokenCacheRedisFact.ReleaseRedisConn()
+
 }

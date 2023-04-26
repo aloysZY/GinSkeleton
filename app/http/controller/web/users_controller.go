@@ -35,6 +35,7 @@ func (u *Users) Login(context *gin.Context) {
 	userName := context.GetString(consts.ValidatorPrefix + "user_name")
 	pass := context.GetString(consts.ValidatorPrefix + "pass")
 	phone := context.GetString(consts.ValidatorPrefix + "phone")
+
 	userModelFact := model.CreateUserFactory(context.Request.Context(), "")
 	userModel := userModelFact.Login(userName, pass)
 
@@ -51,7 +52,7 @@ func (u *Users) Login(context *gin.Context) {
 					"updated_at": time.Now().Format(variable.DateFormat),
 				}
 				response.Success(context, consts.CurdStatusOkMsg, data)
-				go userModel.UpdateUserloginInfo(context.ClientIP(), userModel.Id)
+				go userModel.UpdateUserloginInfo(context.Request.Context(), context.ClientIP(), userModel.Id)
 				return
 			}
 		}
