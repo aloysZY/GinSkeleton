@@ -43,24 +43,24 @@ func (u *userToken) GenerateToken(userid int64, username string, phone string, e
 }
 
 // RecordLoginToken 用户login成功，记录用户token
-func (u *userToken) RecordLoginToken(context context.Context, userToken, clientIp string) bool {
+func (u *userToken) RecordLoginToken(ctx context.Context, userToken, clientIp string) bool {
 	if customClaims, err := u.userJwt.ParseToken(userToken); err == nil {
 		userId := customClaims.UserId
 		expiresAt := customClaims.ExpiresAt
-		return model.CreateUserFactory(context, "").OauthLoginToken(context, userId, userToken, expiresAt, clientIp)
+		return model.CreateUserFactory(ctx, "").OauthLoginToken(ctx, userId, userToken, expiresAt, clientIp)
 	} else {
 		return false
 	}
 }
 
 // TokenIsMeetRefreshCondition 检查token是否满足刷新条件
-func (u *userToken) TokenIsMeetRefreshCondition(context context.Context, token string) bool {
+func (u *userToken) TokenIsMeetRefreshCondition(ctx context.Context, token string) bool {
 	// token基本信息是否有效：1.过期时间在允许的过期范围内;2.基本格式正确
 	customClaims, code := u.isNotExpired(token, variable.ConfigYml.GetInt64("Token.JwtTokenRefreshAllowSec"))
 	switch code {
 	case consts.JwtTokenOK, consts.JwtTokenExpired:
 		// 在数据库的存储信息是否也符合过期刷新刷新条件
-		if model.CreateUserFactory(context, "").OauthRefreshConditionCheck(customClaims.UserId, token) {
+		if model.CreateUserFactory(ctx, "").OauthRefreshConditionCheck(customClaims.UserId, token) {
 			return true
 		}
 	}
@@ -68,15 +68,14 @@ func (u *userToken) TokenIsMeetRefreshCondition(context context.Context, token s
 }
 
 // RefreshToken 刷新token的有效期（默认+3600秒，参见常量配置项）
-func (u *userToken) RefreshToken(context context.Context, oldToken, clientIp string) (newToken string, res bool) {
+func (u *userToken) RefreshToken(ctx context.Context, oldToken, clientIp string) (newToken string, res bool) {
 	var err error
 	// 如果token是有效的、或者在过期时间内，那么执行更新，换取新token
 	if newToken, err = u.userJwt.RefreshToken(oldToken, variable.ConfigYml.GetInt64("Token.JwtTokenRefreshExpireAt")); err == nil {
 		if customClaims, err := u.userJwt.ParseToken(newToken); err == nil {
 			userId := customClaims.UserId
 			expiresAt := customClaims.ExpiresAt
-			// spanContext := trace.SpanContextFromContext(context)
-			if model.CreateUserFactory(context, "").OauthRefreshToken(context, userId, expiresAt, oldToken, newToken, clientIp) {
+			if model.CreateUserFactory(ctx, "").OauthRefreshToken(ctx, userId, expiresAt, oldToken, newToken, clientIp) {
 				return newToken, true
 			}
 		}

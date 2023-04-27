@@ -13,14 +13,15 @@ import (
 
 func Tracering() func(c *gin.Context) {
 	return func(c *gin.Context) {
-		var newCtx context.Context
+		var ctx context.Context
 		var span opentracing.Span
 
+		// 设置中间件
 		spanCtx, err := opentracing.GlobalTracer().Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(c.Request.Header))
 		if err != nil {
-			span, newCtx = opentracing.StartSpanFromContextWithTracer(c.Request.Context(), variable.Tracer, c.Request.URL.Path)
+			span, ctx = opentracing.StartSpanFromContextWithTracer(c.Request.Context(), variable.Tracer, c.Request.URL.Path)
 		} else {
-			span, newCtx = opentracing.StartSpanFromContextWithTracer(
+			span, ctx = opentracing.StartSpanFromContextWithTracer(
 				c.Request.Context(),
 				variable.Tracer,
 				c.Request.URL.Path,
@@ -31,6 +32,7 @@ func Tracering() func(c *gin.Context) {
 
 		defer span.Finish()
 
+		// 记录日志使用用的 ID 信息
 		var traceID string
 		var spanID string
 		var spanContextID = span.Context()
@@ -43,7 +45,7 @@ func Tracering() func(c *gin.Context) {
 		c.Set("X-Trace-ID", traceID)
 		c.Set("X-Span-ID", spanID)
 
-		c.Request = c.Request.WithContext(newCtx)
+		c.Request = c.Request.WithContext(ctx)
 		c.Next()
 	}
 }

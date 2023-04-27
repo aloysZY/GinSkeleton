@@ -158,13 +158,22 @@ func init() {
 		variable.EmailClient = send_email.NewEmail()
 	}
 
-	variable.Tracer, _, _ = jaeger.InitJaeger()
+	// 12.初始化全局路由追踪
+	tracer, _, err := jaeger.InitJaeger(
+		variable.ConfigYml.GetString("Jaeger.ServerName"),
+		variable.ConfigYml.GetString("Jaeger.Host"),
+		variable.ConfigYml.GetString("Jaeger.Port"),
+	)
+	if err != nil {
+		variable.ZapLog.Panic("Error creating jaeger tracer: ", zap.Error(err))
+	}
+	variable.Tracer = tracer
 
 	// 12.初始化client
 	if variable.ConfigYml.GetInt("Kubernetes.IsInitGlobalClient") == 1 {
 		controllerclient, err := kube_client.NewKubeControllerclient(variable.ConfigYml.GetString("Kubernetes.ConfigPath"), 30)
 		if err != nil {
-			variable.ZapLog.Error("Error creating Kubernetes client: ", zap.Error(err))
+			variable.ZapLog.Panic("Error creating Kubernetes client: ", zap.Error(err))
 			return
 		}
 		stopPodch := make(chan struct{})
@@ -180,5 +189,4 @@ func init() {
 		}
 		variable.ControllerClient = controllerclient
 	}
-
 }

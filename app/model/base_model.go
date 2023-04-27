@@ -20,7 +20,7 @@ type BaseModel struct {
 	// DeletedAt gorm.DeletedAt `json:"deleted_at"`   // 如果开发者需要使用软删除功能，打开本行注释掉的代码即可，同时需要在数据库的所有表增加字段deleted_at 类型为 datetime
 }
 
-func UseDbConn(context context.Context, sqlType string) *gorm.DB {
+func UseDbConn(ctx context.Context, sqlType string) *gorm.DB {
 	var db *gorm.DB
 	sqlType = strings.Trim(sqlType, " ")
 	if sqlType == "" {
@@ -46,7 +46,7 @@ func UseDbConn(context context.Context, sqlType string) *gorm.DB {
 		variable.ZapLog.Error(my_errors.ErrorsDbDriverNotExists + sqlType)
 	}
 	_ = db.Use(&tarcer.OpentracingPlugin{})
-	db = db.WithContext(context)
+	db = db.WithContext(ctx)
 	return db
 }
 

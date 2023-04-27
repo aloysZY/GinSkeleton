@@ -7,8 +7,8 @@ import (
 	"ginskeleton/app/utils/md5_encrypt"
 )
 
-func CreateUserCurdFactory(context context.Context) *UsersCurd {
-	return &UsersCurd{model.CreateUserFactory(context, "")}
+func CreateUserCurdFactory(ctx context.Context) *UsersCurd {
+	return &UsersCurd{model.CreateUserFactory(ctx, "")}
 }
 
 type UsersCurd struct {
