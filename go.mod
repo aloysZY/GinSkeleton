@@ -14,13 +14,13 @@ require (
 	github.com/go-playground/universal-translator v0.18.1
 	github.com/go-playground/validator/v10 v10.12.0
 	github.com/go-redis/redis v6.15.9+incompatible
-	github.com/gomodule/redigo v1.8.9
 	github.com/gorilla/websocket v1.5.0
 	github.com/natefinch/lumberjack v2.0.0+incompatible
 	github.com/opentracing-contrib/goredis v0.0.0-20190807091203-90a2649c5f87
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/qifengzhang007/goCurl v1.4.0
 	github.com/rabbitmq/amqp091-go v1.8.0
+	github.com/redis/go-redis/v9 v9.0.3
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/viper v1.15.0
 	github.com/uber/jaeger-client-go v2.30.0+incompatible
@@ -41,9 +41,11 @@ require (
 	github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible // indirect
 	github.com/axgle/mahonia v0.0.0-20180208002826-3358181d7394 // indirect
 	github.com/bytedance/sonic v1.8.0 // indirect
+	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311 // indirect
 	github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/emicklei/go-restful/v3 v3.9.0 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect

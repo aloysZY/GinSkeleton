@@ -1,9 +1,10 @@
-package model
+package user
 
 import (
 	"time"
 
 	"ginskeleton/app/global/variable"
+	"ginskeleton/app/model/web"
 	"ginskeleton/app/service/users/token_cache_redis"
 	"ginskeleton/app/utils/md5_encrypt"
 
@@ -22,11 +23,11 @@ import (
 // 参数说明： 传递空值，默认使用 配置文件选项：UseDbType（mysql）
 
 func CreateUserFactory(ctx context.Context, sqlType string) *UsersModel {
-	return &UsersModel{BaseModel: BaseModel{DB: UseDbConn(ctx, sqlType)}}
+	return &UsersModel{BaseModel: web.BaseModel{DB: web.UseDbConn(ctx, sqlType)}}
 }
 
 type UsersModel struct {
-	BaseModel
+	web.BaseModel
 	UserName    string `gorm:"column:user_name" json:"user_name"`
 	Pass        string `json:"-"`
 	Phone       string `json:"phone"`
@@ -69,13 +70,15 @@ func (u *UsersModel) Login(userName string, pass string) *UsersModel {
 
 // 记录用户登陆（login）生成的token，每次登陆记录一次token
 func (u *UsersModel) OauthLoginToken(ctx context.Context, userId int64, token string, expiresAt int64, clientIp string) bool {
-	sql := `
-		INSERT   INTO  tb_oauth_access_tokens(fr_user_id,action_name,token,expires_at,client_ip)
-		SELECT  ?,'login',? ,?,? FROM DUAL    WHERE   NOT   EXISTS(SELECT  1  FROM  tb_oauth_access_tokens a WHERE  a.fr_user_id=?  AND a.action_name='login' AND a.token=?  )
-	`
-	// 注意：token的精确度为秒，如果在一秒之内，一个账号多次调用接口生成的token其实是相同的，这样写入数据库，第二次的影响行数为0，知己实际上操作仍然是有效的。
-	// 所以这里只判断无错误即可，判断影响行数的话，>=0 都是ok的
-	if u.Exec(sql, userId, token, time.Unix(expiresAt, 0).Format(variable.DateFormat), clientIp, userId, token).Error == nil {
+	span := opentracing.SpanFromContext(ctx)
+	newCtx := opentracing.ContextWithSpan(context.Background(), span)
+	userModelFact := CreateUserFactory(newCtx, "")
+	//sql := `INSERT INTO  tb_oauth_access_tokens(fr_user_id,action_name,token,expires_at,client_ip)
+	//	SELECT ?,'login',? ,?,?  FROM DUAL WHERE NOT EXISTS(SELECT  1  FROM  tb_oauth_access_tokens WHERE  fr_user_id=?  AND action_name='login' AND token=?  )`
+	sql := `INSERT INTO  tb_oauth_access_tokens(fr_user_id,action_name,token,expires_at,client_ip)
+		SELECT ?,'login',? ,?,?`
+	// 注意：token的精确度为秒，如果在一秒之内，一个账号多次调用接口生成的token其实是相同的，这样写入数据库，第二次的影响行数为0，实际上操作仍然是有效的。 所以这里只判断无错误即可，判断影响行数的话，>=0 都是ok的
+	if userModelFact.Exec(sql, userId, token, time.Unix(expiresAt, 0).Format(variable.DateFormat), clientIp).Error == nil {
 		// 异步缓存用户有效的token到redis
 		if variable.ConfigYml.GetInt("Token.IsCacheToRedis") == 1 {
 			go u.ValidTokenCacheToRedis(ctx, userId)
@@ -122,7 +125,7 @@ func (u *UsersModel) UpdateUserloginInfo(ctx context.Context, last_login_ip stri
 }
 
 // 当用户更改密码后，所有的token都失效，必须重新登录
-func (u *UsersModel) OauthResetToken(userId int, newPass, clientIp string) bool {
+func (u *UsersModel) OauthResetToken(ctx context.Context, userId int, newPass, clientIp string) bool {
 	// 如果用户新旧密码一致，直接返回true，不需要处理
 	userItem, err := u.ShowOneItem(userId)
 	if userItem != nil && err == nil && userItem.Pass == newPass {
@@ -131,7 +134,7 @@ func (u *UsersModel) OauthResetToken(userId int, newPass, clientIp string) bool 
 
 		// 如果用户密码被修改，那么redis中的token值也清除
 		if variable.ConfigYml.GetInt("Token.IsCacheToRedis") == 1 {
-			go u.DelTokenCacheFromRedis(int64(userId))
+			go u.DelTokenCacheFromRedis(ctx, int64(userId))
 		}
 
 		sql := "UPDATE  tb_oauth_access_tokens  SET  revoked=1,updated_at=NOW(),action_name='ResetPass',client_ip=?  WHERE  fr_user_id=?  "
@@ -236,10 +239,10 @@ func (u *UsersModel) UpdateDataCheckUserNameIsUsed(userId int, userName string) 
 }
 
 // 更新
-func (u *UsersModel) Update(id int, userName string, pass string, realName string, phone string, remark string, clientIp string) bool {
+func (u *UsersModel) Update(ctx context.Context, id int, userName string, pass string, realName string, phone string, remark string, clientIp string) bool {
 	sql := "update tb_users set user_name=?,pass=?,real_name=?,phone=?,remark=?  WHERE status=1 AND id=?"
 	if u.Exec(sql, userName, pass, realName, phone, remark, id).RowsAffected >= 0 {
-		if u.OauthResetToken(id, pass, clientIp) {
+		if u.OauthResetToken(ctx, id, pass, clientIp) {
 			return true
 		}
 	}
@@ -247,11 +250,11 @@ func (u *UsersModel) Update(id int, userName string, pass string, realName strin
 }
 
 // 删除用户以及关联的token记录
-func (u *UsersModel) Destroy(id int) bool {
+func (u *UsersModel) Destroy(ctx context.Context, id int) bool {
 
 	// 删除用户时，清除用户缓存在redis的全部token
 	if variable.ConfigYml.GetInt("Token.IsCacheToRedis") == 1 {
-		go u.DelTokenCacheFromRedis(int64(id))
+		go u.DelTokenCacheFromRedis(ctx, int64(id))
 	}
 	if u.Delete(u, id).Error == nil {
 		if u.OauthDestroyToken(id) {
@@ -266,12 +269,12 @@ func (u *UsersModel) Destroy(id int) bool {
 func (u *UsersModel) ValidTokenCacheToRedis(ctx context.Context, userId int64) {
 
 	// 先测试 redis 连接，异常就退出了
-	tokenCacheRedisFact := token_cache_redis.CreateUsersTokenCacheFactory(userId)
+	tokenCacheRedisFact := token_cache_redis.CreateUsersTokenCacheFactory(ctx, userId)
 	if tokenCacheRedisFact == nil {
 		variable.ZapLog.Error("redis连接失败，请检查配置")
 		return
 	}
-	defer tokenCacheRedisFact.ReleaseRedisConn()
+	// defer tokenCacheRedisFact.ReleaseRedisConn() // go-redis不需要手动释放连接
 
 	span := opentracing.SpanFromContext(ctx)
 	newCtx := opentracing.ContextWithSpan(context.Background(), span)
@@ -279,7 +282,6 @@ func (u *UsersModel) ValidTokenCacheToRedis(ctx context.Context, userId int64) {
 
 	sql := "SELECT token,expires_at  FROM  `tb_oauth_access_tokens`  WHERE   fr_user_id=?  AND  revoked=0  AND  expires_at>NOW() ORDER  BY  expires_at  DESC , updated_at  DESC  LIMIT ?"
 	maxOnlineUsers := variable.ConfigYml.GetInt("Token.JwtTokenOnlineUsers")
-	// rows, err := u.Raw(sql, userId, maxOnlineUsers).Rows()
 	rows, err := userModelFact.Raw(sql, userId, maxOnlineUsers).Rows()
 	defer func() {
 		//  凡是获取原生结果集的查询，记得释放记录集
@@ -295,7 +297,7 @@ func (u *UsersModel) ValidTokenCacheToRedis(ctx context.Context, userId int64) {
 					tokenCacheRedisFact.SetTokenCache(ts.Unix(), tempToken)
 					// 因为每个用户的token是按照过期时间倒叙排列的，第一个是有效期最长的，将该用户的总键设置一个最大过期时间，到期则自动清理，避免不必要的数据残留
 					if i == 1 {
-						tokenCacheRedisFact.SetUserTokenExpire(ts.Unix())
+						tokenCacheRedisFact.SetUserTokenExpire(ts)
 					}
 				} else {
 					variable.ZapLog.Error("expires_at 转换位时间戳出错", zap.Error(err))
@@ -308,15 +310,15 @@ func (u *UsersModel) ValidTokenCacheToRedis(ctx context.Context, userId int64) {
 }
 
 // DelTokenCacheFromRedis 用户密码修改后，删除redis所有的token
-func (u *UsersModel) DelTokenCacheFromRedis(userId int64) {
+func (u *UsersModel) DelTokenCacheFromRedis(ctx context.Context, userId int64) {
 
-	tokenCacheRedisFact := token_cache_redis.CreateUsersTokenCacheFactory(userId)
+	tokenCacheRedisFact := token_cache_redis.CreateUsersTokenCacheFactory(ctx, userId)
 	if tokenCacheRedisFact == nil {
 		variable.ZapLog.Error("redis连接失败，请检查配置")
 		return
 	}
 
 	tokenCacheRedisFact.ClearUserToken()
-	tokenCacheRedisFact.ReleaseRedisConn()
+	// tokenCacheRedisFact.ReleaseRedisConn()  // go-redis不需要手动释放连接
 
 }

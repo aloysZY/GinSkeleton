@@ -8,6 +8,8 @@ import (
 	"ginskeleton/app/utils/kube_client"
 	"ginskeleton/app/utils/send_email/my_email"
 
+	"github.com/go-redis/redis"
+
 	"github.com/opentracing/opentracing-go"
 
 	"ginskeleton/app/global/my_errors"
@@ -57,6 +59,8 @@ var (
 	EmailClient *my_email.Email
 
 	Tracer opentracing.Tracer
+
+	RedisPool *redis.Client
 )
 
 func init() {

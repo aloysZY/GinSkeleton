@@ -7,6 +7,7 @@ import (
 	"ginskeleton/app/global/variable"
 	userstoken "ginskeleton/app/service/users/token"
 	"ginskeleton/app/utils/response"
+
 	"github.com/dchest/captcha"
 	"github.com/gin-gonic/gin"
 )
@@ -28,7 +29,7 @@ func CheckTokenAuth() gin.HandlerFunc {
 		}
 		token := strings.Split(headerParams.Authorization, " ")
 		if len(token) == 2 && len(token[1]) >= 20 {
-			tokenIsEffective := userstoken.CreateUserFactory().IsEffective(token[1])
+			tokenIsEffective := userstoken.CreateUserFactory().IsEffective(context.Request.Context(), token[1])
 			if tokenIsEffective {
 				if customToken, err := userstoken.CreateUserFactory().ParseToken(token[1]); err == nil {
 					key := variable.ConfigYml.GetString("Token.BindContextKeyName")
@@ -58,7 +59,7 @@ func CheckTokenAuthWithRefresh() gin.HandlerFunc {
 		}
 		token := strings.Split(headerParams.Authorization, " ")
 		if len(token) == 2 && len(token[1]) >= 20 {
-			tokenIsEffective := userstoken.CreateUserFactory().IsEffective(token[1])
+			tokenIsEffective := userstoken.CreateUserFactory().IsEffective(context.Request.Context(), token[1])
 			// 判断token是否有效
 			if tokenIsEffective {
 				if customToken, err := userstoken.CreateUserFactory().ParseToken(token[1]); err == nil {
@@ -72,9 +73,9 @@ func CheckTokenAuthWithRefresh() gin.HandlerFunc {
 				context.Next()
 			} else {
 				// 判断token是否满足刷新条件
-				if userstoken.CreateUserFactory().TokenIsMeetRefreshCondition(token[1]) {
+				if userstoken.CreateUserFactory().TokenIsMeetRefreshCondition(context.Request.Context(), token[1]) {
 					// 刷新token
-					if newToken, ok := userstoken.CreateUserFactory().RefreshToken(token[1], context.ClientIP()); ok {
+					if newToken, ok := userstoken.CreateUserFactory().RefreshToken(context.Request.Context(), token[1], context.ClientIP()); ok {
 						if customToken, err := userstoken.CreateUserFactory().ParseToken(newToken); err == nil {
 							key := variable.ConfigYml.GetString("Token.BindContextKeyName")
 							// token刷新成功，同时绑定在请求上下文
@@ -109,7 +110,7 @@ func RefreshTokenConditionCheck() gin.HandlerFunc {
 		token := strings.Split(headerParams.Authorization, " ")
 		if len(token) == 2 && len(token[1]) >= 20 {
 			// 判断token是否满足刷新条件
-			if userstoken.CreateUserFactory().TokenIsMeetRefreshCondition(token[1]) {
+			if userstoken.CreateUserFactory().TokenIsMeetRefreshCondition(context.Request.Context(), token[1]) {
 				context.Next()
 			} else {
 				response.ErrorTokenRefreshFail(context)

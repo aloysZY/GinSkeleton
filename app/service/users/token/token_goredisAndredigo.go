@@ -9,7 +9,8 @@ import (
 	"ginskeleton/app/global/my_errors"
 	"ginskeleton/app/global/variable"
 	"ginskeleton/app/http/middleware/my_jwt"
-	"ginskeleton/app/model"
+	"ginskeleton/app/model/web/user"
+	"ginskeleton/app/service/users/token_cache_redis"
 
 	"github.com/dgrijalva/jwt-go"
 )
@@ -47,7 +48,7 @@ func (u *userToken) RecordLoginToken(ctx context.Context, userToken, clientIp st
 	if customClaims, err := u.userJwt.ParseToken(userToken); err == nil {
 		userId := customClaims.UserId
 		expiresAt := customClaims.ExpiresAt
-		return model.CreateUserFactory(ctx, "").OauthLoginToken(ctx, userId, userToken, expiresAt, clientIp)
+		return user.CreateUserFactory(ctx, "").OauthLoginToken(ctx, userId, userToken, expiresAt, clientIp)
 	} else {
 		return false
 	}
@@ -60,7 +61,7 @@ func (u *userToken) TokenIsMeetRefreshCondition(ctx context.Context, token strin
 	switch code {
 	case consts.JwtTokenOK, consts.JwtTokenExpired:
 		// 在数据库的存储信息是否也符合过期刷新刷新条件
-		if model.CreateUserFactory(ctx, "").OauthRefreshConditionCheck(customClaims.UserId, token) {
+		if user.CreateUserFactory(ctx, "").OauthRefreshConditionCheck(customClaims.UserId, token) {
 			return true
 		}
 	}
@@ -75,7 +76,7 @@ func (u *userToken) RefreshToken(ctx context.Context, oldToken, clientIp string)
 		if customClaims, err := u.userJwt.ParseToken(newToken); err == nil {
 			userId := customClaims.UserId
 			expiresAt := customClaims.ExpiresAt
-			if model.CreateUserFactory(ctx, "").OauthRefreshToken(ctx, userId, expiresAt, oldToken, newToken, clientIp) {
+			if user.CreateUserFactory(ctx, "").OauthRefreshToken(ctx, userId, expiresAt, oldToken, newToken, clientIp) {
 				return newToken, true
 			}
 		}
@@ -105,21 +106,21 @@ func (u *userToken) isNotExpired(token string, expireAtSec int64) (*my_jwt.Custo
 }
 
 // IsEffective 判断token是否有效（未过期+数据库用户信息正常）
-func (u *userToken) IsEffective(context context.Context, token string) bool {
+func (u *userToken) IsEffective(ctx context.Context, token string) bool {
 	customClaims, code := u.isNotExpired(token, 0)
 	if consts.JwtTokenOK == code {
 		// 1.首先在redis检测是否存在某个用户对应的有效token，如果存在就直接返回，不再继续查询mysql，否则最后查询mysql逻辑，确保万无一失
-		// if variable.ConfigYml.GetInt("Token.IsCacheToRedis") == 1 {
-		// 	tokenRedisFact := token_cache_redis.CreateUsersTokenCacheFactory(customClaims.UserId)
-		// 	if tokenRedisFact != nil {
-		// 		defer tokenRedisFact.ReleaseRedisConn()
-		// 		if tokenRedisFact.TokenCacheIsExists(token) {
-		// 			return true
-		// 		}
-		// 	}
-		// }
+		if variable.ConfigYml.GetInt("Token.IsCacheToRedis") == 1 {
+			tokenRedisFact := token_cache_redis.CreateUsersTokenCacheFactory(ctx, customClaims.UserId)
+			if tokenRedisFact != nil {
+				// defer tokenRedisFact.ReleaseRedisConn()  // go-redis不需要手动释放连接
+				if tokenRedisFact.TokenCacheIsExists(token) {
+					return true
+				}
+			}
+		}
 		// 2.token符合token本身的规则以后，继续在数据库校验是不是符合本系统其他设置，例如：一个用户默认只允许10个账号同时在线（10个token同时有效）
-		if model.CreateUserFactory(context, "").OauthCheckTokenIsOk(customClaims.UserId, token) {
+		if user.CreateUserFactory(ctx, "").OauthCheckTokenIsOk(customClaims.UserId, token) {
 			return true
 		}
 	}

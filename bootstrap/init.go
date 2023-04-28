@@ -8,6 +8,7 @@ import (
 
 	"ginskeleton/app/utils/jaeger"
 	"ginskeleton/app/utils/kube_client"
+	"ginskeleton/app/utils/redis_factory"
 	"ginskeleton/app/utils/send_email"
 
 	"go.uber.org/zap"
@@ -169,7 +170,12 @@ func init() {
 	}
 	variable.Tracer = tracer
 
-	// 12.初始化client
+	// 13.初始化 redis
+	if variable.ConfigYml.GetInt("Token.IsCacheToRedis") == 1 {
+		variable.RedisPool = redis_factory.InitRedisClientPool()
+	}
+
+	// 14.初始化client
 	if variable.ConfigYml.GetInt("Kubernetes.IsInitGlobalClient") == 1 {
 		controllerclient, err := kube_client.NewKubeControllerclient(variable.ConfigYml.GetString("Kubernetes.ConfigPath"), 30)
 		if err != nil {
@@ -185,6 +191,7 @@ func init() {
 			if controllerclient.Status == 1 {
 				break
 			}
+			variable.ZapLog.Info("Kubernetes client initing...")
 			time.Sleep(time.Second * 1)
 		}
 		variable.ControllerClient = controllerclient
