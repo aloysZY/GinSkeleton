@@ -8,7 +8,6 @@ import (
 	"ginskeleton/app/http/controller/captcha"
 	"ginskeleton/app/http/middleware/authorization"
 	"ginskeleton/app/http/middleware/cors"
-	"ginskeleton/app/http/middleware/tracering"
 	validatorFactory "ginskeleton/app/http/validator/core/factory"
 	"ginskeleton/app/utils/gin_release"
 
@@ -40,7 +39,6 @@ func InitWebRouter() *gin.Engine {
 	} else {
 		// 调试模式，开启 pprof 包，便于开发阶段分析程序性能
 		router = gin.Default()
-		router.Use(tracering.Tracering())
 		pprof.Register(router)
 	}
 

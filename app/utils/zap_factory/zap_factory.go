@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"ginskeleton/app/global/variable"
+
 	"github.com/natefinch/lumberjack"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -56,7 +57,7 @@ func CreateZapFactory(entry func(zapcore.Entry) error) *zap.Logger {
 	}
 
 	// 写入器
-	fileName := variable.BasePath + variable.ConfigYml.GetString("Logs.ginskeletonLogName")
+	fileName := variable.BasePath + variable.ConfigYml.GetString("Logs.SkeletonLogName")
 	lumberJackLogger := &lumberjack.Logger{
 		Filename:   fileName,                                     // 日志文件的位置
 		MaxSize:    variable.ConfigYml.GetInt("Logs.MaxSize"),    // 在进行切割之前，日志文件的最大大小（以MB为单位）

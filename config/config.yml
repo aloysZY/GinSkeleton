@@ -37,7 +37,7 @@ Redis:
 
 Logs:
   GinLogName: "/storage/logs/gin.log"                  #设置 gin 框架的接口访问日志
-  ginskeletonLogName: "/storage/logs/ginskeleton.log"    #设置ginskeleton项目骨架运行时日志文件名，注意该名称不要与上一条重复 ,避免和 gin 框架的日志掺杂一起，造成混乱。
+  SkeletonLogName: "/storage/logs/skeleton.log"    #设置skeleton项目骨架运行时日志文件名，注意该名称不要与上一条重复 ,避免和 gin 框架的日志掺杂一起，造成混乱。
   TextFormat: "json"                                #记录日志的格式，参数选项：console、json ， console 表示一般的文本格式
   TimePrecision: "millisecond"                         #记录日志时，相关的时间精度，该参数选项：second  、 millisecond ， 分别表示 秒 和 毫秒 ,默认为毫秒级别
   MaxSize: 10                                           #每个日志的最大尺寸(以MB为单位）， 超过该值，系统将会自动进行切割
@@ -145,10 +145,12 @@ Captcha:
   captchaValue: "captcha_value"   #验证码值提交时的键名
   length: 4   # 验证码生成时的长度
 
+#k8s连接设置
 Kubernetes:
   IsInitGlobalClient: 0
   ConfigPath:
 
+#Jaeger配置
 Jaeger:
   ServerName: "skeleton"
   Host: "127.0.0.1"
