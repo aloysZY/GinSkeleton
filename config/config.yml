@@ -147,7 +147,7 @@ Captcha:
 
 #k8s连接设置
 Kubernetes:
-  IsInitGlobalClient: 0
+  IsInitGlobalClient: 1
   ConfigPath:
 
 #Jaeger配置

@@ -171,6 +171,7 @@ func init() {
 	variable.Tracer = tracer
 
 	// 13.初始化 redis
+	//使用 go-redis 不需要和 redig一样，初始化连接池后，每次在写函数单独拿连接
 	if variable.ConfigYml.GetInt("Token.IsCacheToRedis") == 1 {
 		variable.RedisPool = redis_factory.InitRedisClientPool()
 	}
