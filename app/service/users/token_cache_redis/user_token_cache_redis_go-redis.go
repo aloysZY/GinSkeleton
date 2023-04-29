@@ -16,7 +16,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func CreateUsersTokenCacheFactory(ctx context.Context, userId int64) *userTokenCacheRedis {
+func CreateUsersTokenCacheFactory(userId int64) *userTokenCacheRedis {
 	//redCli := redis_factory.GetOneRedisClient(ctx)
 	//redCli := variable.RedisPool
 	//if redCli == nil {

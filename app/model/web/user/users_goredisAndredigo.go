@@ -271,7 +271,7 @@ func (u *UsersModel) Destroy(ctx context.Context, id int) bool {
 func (u *UsersModel) ValidTokenCacheToRedis(ctx context.Context, userId int64) {
 
 	// 先测试 redis 连接，异常就退出了
-	tokenCacheRedisFact := token_cache_redis.CreateUsersTokenCacheFactory(ctx, userId)
+	tokenCacheRedisFact := token_cache_redis.CreateUsersTokenCacheFactory(userId)
 	if tokenCacheRedisFact == nil {
 		variable.ZapLog.Error("redis连接失败，请检查配置")
 		return
@@ -315,7 +315,7 @@ func (u *UsersModel) ValidTokenCacheToRedis(ctx context.Context, userId int64) {
 // DelTokenCacheFromRedis 用户密码修改后，删除redis所有的token
 func (u *UsersModel) DelTokenCacheFromRedis(ctx context.Context, userId int64) {
 
-	tokenCacheRedisFact := token_cache_redis.CreateUsersTokenCacheFactory(ctx, userId)
+	tokenCacheRedisFact := token_cache_redis.CreateUsersTokenCacheFactory(userId)
 	if tokenCacheRedisFact == nil {
 		variable.ZapLog.Error("redis连接失败，请检查配置")
 		return

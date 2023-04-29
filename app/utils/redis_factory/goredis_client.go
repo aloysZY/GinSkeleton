@@ -1,19 +1,13 @@
 package redis_factory
 
 import (
-	"context"
 	"fmt"
 	"net"
 	"time"
 
-	apmgoredis "github.com/opentracing-contrib/goredis"
-	"github.com/opentracing/opentracing-go"
-
 	"ginskeleton/app/core/event_manage"
 	"ginskeleton/app/global/my_errors"
 	"ginskeleton/app/global/variable"
-
-	"go.uber.org/zap"
 
 	"github.com/go-redis/redis"
 )
@@ -96,32 +90,32 @@ func InitRedisClientPool() *redis.Client {
 	return redisPool
 }
 
-// 从连接池获取一个redis连接
-func GetOneRedisClient(ctx context.Context) apmgoredis.Client {
-	maxRetryTimes := variable.ConfigYml.GetInt("Redis.ConnFailRetryTimes")
-	for i := 1; i <= maxRetryTimes; i++ {
-		// oneConn = redisPool.Get()
-		// 首先通过执行一个获取时间的命令检测连接是否有效，如果已有的连接无法执行命令，则重新尝试连接到redis服务器获取新的连接池地址
-		// 连接不可用可能会发生的场景主要有：服务端redis重启、客户端网络在有线和无线之间切换等
-		if _, err := variable.RedisPool.Do("time").Result(); err != nil {
-			// fmt.Printf("连接已经失效(出错)：%+v\n", replyErr.Error())
-			// 如果已有的redis连接池获取连接出错(官方库的说法是连接不可用)，那么继续使用从新初始化连接池
-			InitRedisClientPool()
-		} else if i == maxRetryTimes {
-			// variable.ZapLog.Error("Redis：网络中断,开始重连进行中..." , zap.Error(oneConn.Err()))
-			variable.ZapLog.Error(my_errors.ErrorsRedisGetConnFail, zap.Error(err))
-			return nil
-		} else if err == nil {
-			break
-		}
-		// 如果出现网络短暂的抖动，短暂休眠后，支持自动重连
-		time.Sleep(time.Second * variable.ConfigYml.GetDuration("Redis.ReConnectInterval"))
-	}
-
-	// 每次获取一个连接都将上下文传入
-	span := opentracing.SpanFromContext(ctx)
-	newCtx := opentracing.ContextWithSpan(context.Background(), span)
-	client := apmgoredis.Wrap(variable.RedisPool).WithContext(newCtx)
-
-	return client
-}
+//// 从连接池获取一个redis连接
+//func GetOneRedisClient(ctx context.Context) apmgoredis.Client {
+//	maxRetryTimes := variable.ConfigYml.GetInt("Redis.ConnFailRetryTimes")
+//	for i := 1; i <= maxRetryTimes; i++ {
+//		// oneConn = redisPool.Get()
+//		// 首先通过执行一个获取时间的命令检测连接是否有效，如果已有的连接无法执行命令，则重新尝试连接到redis服务器获取新的连接池地址
+//		// 连接不可用可能会发生的场景主要有：服务端redis重启、客户端网络在有线和无线之间切换等
+//		if _, err := variable.RedisPool.Do("time").Result(); err != nil {
+//			// fmt.Printf("连接已经失效(出错)：%+v\n", replyErr.Error())
+//			// 如果已有的redis连接池获取连接出错(官方库的说法是连接不可用)，那么继续使用从新初始化连接池
+//			InitRedisClientPool()
+//		} else if i == maxRetryTimes {
+//			// variable.ZapLog.Error("Redis：网络中断,开始重连进行中..." , zap.Error(oneConn.Err()))
+//			variable.ZapLog.Error(my_errors.ErrorsRedisGetConnFail, zap.Error(err))
+//			return nil
+//		} else if err == nil {
+//			break
+//		}
+//		// 如果出现网络短暂的抖动，短暂休眠后，支持自动重连
+//		time.Sleep(time.Second * variable.ConfigYml.GetDuration("Redis.ReConnectInterval"))
+//	}
+//
+//	// 每次获取一个连接都将上下文传入
+//	span := opentracing.SpanFromContext(ctx)
+//	newCtx := opentracing.ContextWithSpan(context.Background(), span)
+//	client := apmgoredis.Wrap(variable.RedisPool).WithContext(newCtx)
+//
+//	return client
+//}

@@ -37,6 +37,7 @@ func (u *Users) Login(ctx *gin.Context) {
 	phone := ctx.GetString(consts.ValidatorPrefix + "phone")
 
 	userModelFact := user.CreateUserFactory(ctx.Request.Context(), "")
+	//这里如果不传入上下文，使用初始化的大并发管道会关闭，这是为什么？
 	userModel := userModelFact.Login(ctx.Request.Context(), userName, pass)
 
 	if userModel != nil {

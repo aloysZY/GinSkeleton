@@ -111,7 +111,7 @@ func (u *userToken) IsEffective(ctx context.Context, token string) bool {
 	if consts.JwtTokenOK == code {
 		// 1.首先在redis检测是否存在某个用户对应的有效token，如果存在就直接返回，不再继续查询mysql，否则最后查询mysql逻辑，确保万无一失
 		if variable.ConfigYml.GetInt("Token.IsCacheToRedis") == 1 {
-			tokenRedisFact := token_cache_redis.CreateUsersTokenCacheFactory(ctx, customClaims.UserId)
+			tokenRedisFact := token_cache_redis.CreateUsersTokenCacheFactory(customClaims.UserId)
 			if tokenRedisFact != nil {
 				// defer tokenRedisFact.ReleaseRedisConn()  // go-redis不需要手动释放连接
 				if tokenRedisFact.TokenCacheIsExists(token) {
