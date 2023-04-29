@@ -6,15 +6,14 @@ import (
 	"net"
 	"time"
 
+	apmgoredis "github.com/opentracing-contrib/goredis"
+	"github.com/opentracing/opentracing-go"
+
 	"ginskeleton/app/core/event_manage"
 	"ginskeleton/app/global/my_errors"
 	"ginskeleton/app/global/variable"
 
 	"go.uber.org/zap"
-
-	"github.com/opentracing/opentracing-go"
-
-	apmgoredis "github.com/opentracing-contrib/goredis"
 
 	"github.com/go-redis/redis"
 )

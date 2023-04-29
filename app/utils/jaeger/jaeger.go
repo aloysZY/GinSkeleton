@@ -16,9 +16,10 @@ func InitJaeger(serviceName, agentHost, agentPort string) (opentracing.Tracer, i
 	tracer, closer, err := (&config.Configuration{
 		ServiceName: serviceName,
 		Sampler: &config.SamplerConfig{
-			Type: jaeger.SamplerTypeConst,
+			//Type: jaeger.SamplerTypeConst,
+			Type: jaeger.SamplerTypeRemote,
 			// param的值在0到1之间，设置为1则将所有的Operation输出到Reporter
-			Param: 1,
+			//Param: 1,
 		},
 		Reporter: &config.ReporterConfig{
 			LogSpans:            true,

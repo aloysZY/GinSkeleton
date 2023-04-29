@@ -4,8 +4,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/go-redis/redis"
 	apmgoredis "github.com/opentracing-contrib/goredis"
+
+	"github.com/go-redis/redis"
 )
 
 // 定义一个redis客户端结构体

@@ -37,7 +37,7 @@ func (u *Users) Login(ctx *gin.Context) {
 	phone := ctx.GetString(consts.ValidatorPrefix + "phone")
 
 	userModelFact := user.CreateUserFactory(ctx.Request.Context(), "")
-	userModel := userModelFact.Login(userName, pass)
+	userModel := userModelFact.Login(ctx.Request.Context(), userName, pass)
 
 	if userModel != nil {
 		userTokenFactory := userstoken.CreateUserFactory()
